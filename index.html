@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<!-- FinBot, Stage 1 of 8 (website foundation and UI): this single file holds the layout, theme, navigation and placeholder pages that later stages will connect to real features. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FinBot — Personal Finance & Market Intelligence</title>
+<style>
+/* DESIGN TOKENS: one place that defines the brand colours for light and dark themes so every component stays consistent. */
+:root{--g:#10B981;--gd:#047857;--tx:#17211D;--tx2:#647067;--bg:#F7F9F7;--card:#fff;--bd:#E4EAE5;--soft:#ECFDF5;--red:#DC2626;--sb:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+:root:not([data-theme="light"]){}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--tx:#E7EEE9;--tx2:#93A097;--bg:#111714;--card:#18201C;--bd:#26302A;--soft:#12261D;--sb:#141B17;--gd:#34D399}}
+:root[data-theme="dark"]{--tx:#E7EEE9;--tx2:#93A097;--bg:#111714;--card:#18201C;--bd:#26302A;--soft:#12261D;--sb:#141B17;--gd:#34D399}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+svg{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--g);outline-offset:2px}
+/* SIDEBAR: styles the collapsible left panel with branding, New Chat, history and navigation. */
+#sb{width:268px;background:var(--sb);border-right:1px solid var(--bd);display:flex;flex-direction:column;padding:14px 12px;transition:width .2s;flex:none;overflow:hidden}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 6px 14px;font-weight:700;font-size:18px}
+.logo{width:30px;height:30px;border-radius:8px;background:var(--g);color:#fff;display:grid;place-items:center;flex:none}
+.logo svg{stroke:#fff}
+.ib{background:none;border:0;color:var(--tx2);padding:6px;border-radius:8px;display:grid;place-items:center}
+.ib:hover{background:var(--soft);color:var(--gd)}
+.brand .ib{margin-left:auto}
+.newchat{display:flex;align-items:center;gap:10px;background:var(--g);color:#fff;border:0;border-radius:10px;padding:10px 12px;font-weight:600;margin-bottom:12px}
+.newchat:hover{background:var(--gd)}
+.lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--tx2);padding:8px 8px 4px}
+#hist{max-height:120px;overflow:auto;margin-bottom:6px}
+.hi{display:flex;align-items:center;gap:6px;width:100%;text-align:left;background:none;border:0;padding:6px 8px;border-radius:8px;color:var(--tx2);font-size:13px}
+.hi:hover{background:var(--soft)}.hi span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hi i{opacity:0;font-style:normal;padding:0 4px}.hi:hover i{opacity:1;color:var(--red)}
+.empty-s{font-size:13px;color:var(--tx2);padding:4px 8px}
+nav{display:flex;flex-direction:column;gap:2px;overflow:auto}
+.nv{display:flex;align-items:center;gap:12px;background:none;border:0;border-radius:10px;padding:9px 10px;color:var(--tx2);text-align:left;white-space:nowrap;position:relative}
+.nv:hover{background:var(--soft);color:var(--tx)}
+.nv.on{background:var(--soft);color:var(--gd);font-weight:600}
+.nv.on:before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--g)}
+body.col #sb{width:68px}
+body.col .tx,body.col .lbl,body.col #hist,body.col .brand b{display:none}
+body.col .brand{justify-content:center;flex-wrap:wrap}body.col .brand .ib{margin:0}
+body.col .nv,body.col .newchat{justify-content:center;padding:10px}
+[data-tip]{position:relative}
+body.col [data-tip]:hover:after{content:attr(data-tip);position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);background:var(--tx);color:var(--bg);padding:4px 8px;border-radius:6px;font-size:12px;white-space:nowrap;z-index:60;font-weight:500}
+/* MAIN WORKSPACE: styles the top bar, the page area, headings, cards, buttons, chips and empty states shared by every page. */
+#main{flex:1;min-width:0;display:flex;flex-direction:column;height:100%}
+.top{display:flex;align-items:center;gap:10px;padding:12px 24px;border-bottom:1px solid var(--bd)}
+.top h2{margin:0;font-size:16px;font-weight:600;flex:1}
+#menu{display:none}
+#view{flex:1;overflow:auto;padding:32px 24px 40px}
+.wrap{max-width:960px;margin:0 auto}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.15;letter-spacing:-.02em;margin:0 0 10px}
+.sub{color:var(--tx2);font-size:17px;margin:0 0 28px;max-width:620px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:28px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px}
+.hc{text-align:left;transition:border-color .15s,transform .15s;display:flex;flex-direction:column;gap:8px}
+.hc:hover{border-color:var(--g);transform:translateY(-2px)}
+.ico{width:38px;height:38px;border-radius:10px;background:var(--soft);color:var(--gd);display:grid;place-items:center}
+.hc b{font-size:16px}.hc p{margin:0;color:var(--tx2);font-size:13.5px}
+.chatbox{display:flex;gap:8px;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:8px 8px 8px 16px;align-items:center}
+.chatbox:focus-within{border-color:var(--g);box-shadow:0 0 0 3px rgba(16,185,129,.15)}
+.chatbox input{flex:1;border:0;background:none;outline:0;min-width:0;padding:8px 0}
+.btn{background:var(--g);color:#fff;border:0;border-radius:10px;padding:9px 16px;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{background:var(--gd)}.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.sec{background:none;color:var(--tx);border:1px solid var(--bd)}.btn.sec:hover{border-color:var(--g);color:var(--gd)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{background:var(--card);border:1px solid var(--bd);border-radius:999px;padding:6px 14px;font-size:13px;color:var(--tx2)}
+.chip:hover{border-color:var(--g);color:var(--gd)}
+.empty{border:1px dashed var(--bd);border-radius:14px;padding:36px 20px;text-align:center;color:var(--tx2)}
+.empty .ico{margin:0 auto 12px}.empty b{display:block;color:var(--tx);font-size:16px;margin-bottom:4px}
+.empty p{margin:0 auto 14px;max-width:420px;font-size:14px}
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--gd);margin-left:8px;vertical-align:middle}
+.ph{font-size:22px;font-weight:700;color:var(--tx2)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.stats small{color:var(--tx2);display:block}
+/* FORMS, TABLES AND CONTROLS: styles inputs, tables, toggles and chat bubbles used by the calculator, watchlist, settings and assistant. */
+label{display:block;font-size:13px;color:var(--tx2);margin-bottom:4px}
+.f{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:9px 12px}
+.f:focus{outline:0;border-color:var(--g)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--bd)}th{color:var(--tx2);font-weight:500;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.tw{overflow-x:auto}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:10px;padding:3px;margin-bottom:16px;background:var(--card)}
+.seg button{border:0;background:none;padding:6px 14px;border-radius:7px;color:var(--tx2)}
+.seg button.on{background:var(--g);color:#fff}
+.res{font-size:28px;font-weight:700;color:var(--gd)}
+.neg{color:var(--red)}
+.msgs{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+.m{max-width:80%;padding:10px 14px;border-radius:14px;border:1px solid var(--bd);background:var(--card)}
+.m.u{align-self:flex-end;background:var(--g);color:#fff;border-color:var(--g)}
+.tg{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.tg:last-child{border:0}
+.sw{width:42px;height:24px;border-radius:99px;background:var(--bd);border:0;position:relative;padding:0}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on{background:var(--g)}.sw.on:after{left:21px}
+#bar{display:none}
+#scrim{display:none}
+/* CHAT: styles the full-height conversation view, message bubbles, markdown content, copy/retry actions and notices. */
+#view.chatv{display:flex;flex-direction:column;overflow:hidden;padding-bottom:16px}
+.chat{flex:1;display:flex;flex-direction:column;min-height:0;width:100%;max-width:960px;margin:0 auto}
+.chat .msgs{flex:1;overflow:auto;min-height:0;padding-bottom:8px}
+.chatbox textarea{flex:1;border:0;background:none;outline:0;resize:none;min-width:0;padding:8px 0;max-height:160px;line-height:1.4}
+.m.a{max-width:100%;width:fit-content}
+.m.err{border-color:var(--red)}
+.md p{margin:0 0 8px}.md>:last-child{margin-bottom:0}.md h4{margin:10px 0 6px;font-size:15px}
+.md ul,.md ol{margin:0 0 8px;padding-left:20px}.md table{font-size:13px}
+.md code{background:var(--bg);padding:1px 5px;border-radius:5px;font-size:13px}.md pre{background:var(--bg);padding:10px;border-radius:8px;overflow:auto}
+.meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--tx2);margin-top:8px}
+.btn.sm{padding:3px 10px;font-size:12.5px;border-radius:8px}
+.load{color:var(--tx2);animation:pl 1.4s ease-in-out infinite}@keyframes pl{50%{opacity:.45}}
+.note{font-size:13px;color:var(--tx2);background:var(--soft);border-radius:10px;padding:8px 12px;margin-bottom:10px}
+.lnk{background:none;border:0;padding:0;color:var(--gd);text-decoration:underline}
+/* MARKET SEARCH: styles the search row, autocomplete list, result table, stock detail panel and coverage notes. */
+.mrow{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.ac{position:relative;flex:1;min-width:220px}
+.sug{position:absolute;left:0;right:0;top:100%;margin:4px 0 0;padding:4px;list-style:none;background:var(--card);border:1px solid var(--bd);border-radius:12px;max-height:340px;overflow:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.sug li{display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;flex-wrap:wrap}
+.sug li.on,.sug li[data-id]:hover{background:var(--soft)}.sug li.info{cursor:default;color:var(--tx2);font-size:13px}
+.tkr{font-weight:600}.xb{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--bd);color:var(--tx2);white-space:nowrap}
+.xb.g{background:var(--soft);color:var(--gd);border-color:transparent}.xb.w{border-color:var(--red);color:var(--red)}
+.sm2{font-size:12.5px;color:var(--tx2)}
+.rr{background:none;border:0;text-align:left;padding:0;font-weight:600;color:var(--gd)}.rr:hover{text-decoration:underline}
+.pos{color:var(--gd)}
+.spark{width:100%;height:140px;stroke:none;margin:8px 0}
+.warnb{border:1px solid var(--red);border-radius:10px;padding:8px 12px;font-size:13px;margin-top:10px}
+details.cov summary{cursor:pointer;font-weight:600}
+/* STOCK ANALYSIS: styles the interactive chart, tooltip, toggles and metric cards of the stock dashboard. */
+.chartwrap{position:relative;margin:6px 0}
+.chartsvg{width:100%;height:auto;stroke:none;fill:none;display:block;touch-action:pan-y}
+.ct{fill:var(--tx2);font-size:10.5px;stroke:none}.gl{stroke:var(--bd);stroke-width:1}.cx{stroke:var(--tx2);stroke-width:1;stroke-dasharray:3 3}
+.tip{position:absolute;pointer-events:none;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:6px 10px;font-size:12px;min-width:150px;box-shadow:0 6px 18px rgba(0,0,0,.14);z-index:5}
+.tgl{border:1px solid var(--bd);background:var(--card);border-radius:999px;padding:3px 12px;font-size:12.5px;color:var(--tx2)}
+.tgl[aria-pressed=true]{background:var(--soft);color:var(--gd);border-color:var(--g)}
+.ctl{display:flex;gap:10px 16px;flex-wrap:wrap;align-items:center;margin:10px 0}.ctl .seg{margin:0}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-top:14px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:14px}.kv:last-child{border:0}
+.kv>span{color:var(--tx2)}
+/* SCREENER: styles the scan panel, progress bar, sortable results table and filter grid. */
+.prog{width:100%;height:10px;accent-color:var(--g)}
+.sortb{background:none;border:0;font:inherit;color:inherit;padding:0;cursor:pointer;text-transform:inherit;letter-spacing:inherit;white-space:nowrap}
+.sortb:hover,th[aria-sort="ascending"] .sortb,th[aria-sort="descending"] .sortb{color:var(--gd)}
+.zt th,.zt td{white-space:nowrap}.zt td:first-child{white-space:normal;min-width:190px}
+.fchip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;background:var(--soft);color:var(--gd);margin:2px 4px 2px 0}
+.pg{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}
+/* WATCHLIST AND COMPARE: styles the toast, search results, comparison table, correlation matrix and legend. */
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 16px;border-radius:10px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:80;max-width:90vw}
+#toast.show{opacity:1}
+.msr{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--bd);padding:8px 4px}
+.msr:hover{background:var(--soft)}
+.leg{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.legb{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--bd);background:var(--card);border-radius:999px;padding:3px 12px;font-size:12.5px;color:var(--tx)}
+.legb[aria-pressed=false]{opacity:.45;text-decoration:line-through}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.ctable th,.ctable td{white-space:normal;text-align:right;vertical-align:top}.ctable th:first-child,.ctable td:first-child{text-align:left;color:var(--tx2);min-width:150px}
+.bestc{background:var(--soft);font-weight:600}
+.cm td{text-align:center;min-width:64px}
+.chip2{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--bd);background:var(--card);border-radius:999px;padding:3px 6px 3px 12px;font-size:13px;margin:0 6px 6px 0}
+.chip2 button{border:0;background:none;color:var(--tx2);padding:0 4px;font-size:15px}
+/* RESPONSIVE: below 860px the sidebar becomes a slide-in drawer and a bottom tab bar appears for phones and small tablets. */
+@media(max-width:860px){
+ #sb{position:fixed;z-index:50;top:0;bottom:0;left:0;transform:translateX(-100%);transition:transform .2s;width:280px!important;box-shadow:0 0 30px rgba(0,0,0,.2)}
+ body.open #sb{transform:none}
+ body.open #scrim{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40}
+ body.col .tx,body.col .lbl,body.col #hist,body.col .brand b{display:revert}
+ #menu{display:grid}.top{padding:10px 14px}#colbtn{display:none}
+ #view{padding:22px 16px 90px}
+ #bar{display:flex;position:fixed;left:0;right:0;bottom:0;background:var(--sb);border-top:1px solid var(--bd);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:30;justify-content:space-around}
+ #bar button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--tx2);padding:4px 10px;border-radius:8px}
+ #bar button.on{color:var(--gd);font-weight:600}
+ .m{max-width:92%}#view.chatv{padding-bottom:84px}
+}
+</style>
+</head>
+<body>
+<!-- Sidebar markup: brand, collapse button, New Chat, conversation history and navigation (filled in by JavaScript). -->
+<aside id="sb" aria-label="Sidebar">
+ <div class="brand"><div class="logo"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg></div><b>FinBot</b>
+  <button class="ib" id="colbtn" aria-label="Collapse sidebar" data-tip="Expand"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M9 4v16"/></svg></button></div>
+ <button class="newchat" id="newchat" data-tip="New Chat"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span class="tx">New Chat</span></button>
+ <div class="lbl">Conversations</div><div id="hist"></div>
+ <nav id="nav"></nav>
+</aside>
+<div id="scrim"></div>
+<!-- Main column: a top bar with the page title and theme toggle, above the area where the selected page is drawn. -->
+<div id="main">
+ <header class="top">
+  <button class="ib" id="menu" aria-label="Open menu"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+  <h2 id="ttl">Home</h2>
+  <button class="ib" id="theme" aria-label="Toggle theme" title="Toggle light/dark"></button>
+ </header>
+ <main id="view"></main>
+</div>
+<!-- Mobile bottom tab bar, hidden on desktop. -->
+<div id="bar"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+// ICONS: a small library of inline SVG icon paths so the app needs no external icon files.
+const I={
+compare:'<path d="M7 4v16M17 4v16M3 8l4-4 4 4M13 16l4 4 4-4"/>',
+home:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',
+overview:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+chat:'<path d="M21 12a8 8 0 01-11.6 7.1L4 20l1-4.6A8 8 0 1121 12z"/>',
+market:'<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
+screen:'<path d="M3 5h18l-7 8v6l-4 2v-8z"/>',
+watch:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+exp:'<circle cx="12" cy="12" r="9"/><path d="M12 12V3M12 12l6.4 6.4"/>',
+calc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01"/>',
+set:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+tool:'<path d="M14.7 6.3a4 4 0 005 5L21 17l-4 4-5.7-1.3L6 14.3 3 21l6-3 5.7-11.7z"/>',
+send:'<path d="M5 12h14M13 6l6 6-6 6"/>',
+sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+moon:'<path d="M21 13A9 9 0 1111 3a7 7 0 0010 10z"/>',
+up:'<path d="M12 16V4M6 10l6-6 6 6M4 20h16"/>'};
+const ic=n=>`<svg viewBox="0 0 24 24">${I[n]}</svg>`;
+// PAGES: the list of sections (id, label, icon) that drives the sidebar, mobile bar and page title.
+const PAGES=[['home','Home','home'],['overview','Overview','overview'],['assistant','AI Assistant','chat'],['market','Market Intelligence','market'],['screener','Stock Screener','screen'],['compare','Compare','compare'],['watchlist','Watchlist','watch'],['expenses','Expense Analysis','exp'],['calculator','Financial Calculator','calc'],['settings','Settings','set']];
+// HELPERS: a short DOM selector, plus safe browser storage that quietly does nothing if storage is unavailable.
+const $=s=>document.querySelector(s), body=document.body;
+const store={get(k,d){try{const v=localStorage.getItem('finbot:'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('finbot:'+k,JSON.stringify(v))}catch(e){}}};
+// STATE: one object holding the current page, saved conversations, watchlist tickers, theme and calculator mode.
+let S={page:'home',convos:store.get('convos',[]),cur:null,watch:store.get('watch',[]),theme:store.get('theme',null),calc:'compound',pending:null};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const save=()=>{store.set('convos',S.convos);store.set('watch',S.watch)};
+// Example prompts shown as clickable chips on the home and assistant pages.
+const EX=['Explain compound interest with an example.','Calculate the EMI on a ₹5 lakh loan.','Compare the historical performance of two stocks.','Analyse my monthly expenses.'];
+
+/* CHROME: functions that redraw the sidebar, history, mobile bar and theme, and switch between pages. */
+// Rebuilds the sidebar links, mobile tabs, conversation history and page title to reflect the current state.
+function renderNav(){
+ $('#nav').innerHTML='<div class="lbl tx">Workspace</div>'+PAGES.filter(p=>p[0]!=='home').map(p=>`<button class="nv ${S.page===p[0]?'on':''}" data-go="${p[0]}" data-tip="${p[1]}">${ic(p[2])}<span class="tx">${p[1]}</span></button>`).join('');
+ const b=[['home','Home','home'],['assistant','Chat','chat'],['market','Markets','market'],['calculator','Tools','calc']];
+ $('#bar').innerHTML=b.map(p=>`<button class="${S.page===p[0]?'on':''}" data-go="${p[0]}">${ic(p[2])}${p[1]}</button>`).join('');
+ $('#hist').innerHTML=S.convos.length?S.convos.map(c=>`<button class="hi" data-c="${c.id}">${ic('chat')}<span class="tx">${esc(c.title)}</span><i data-del="${c.id}" title="Delete">×</i></button>`).join(''):'<div class="empty-s">No conversations yet.</div>';
+ $('#ttl').textContent=(PAGES.find(p=>p[0]===S.page)||[])[1];
+}
+// Applies light or dark mode (the saved choice, otherwise the system setting) and updates the toggle icon.
+function applyTheme(){
+ const dark=S.theme?S.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;
+ if(S.theme)document.documentElement.dataset.theme=S.theme;else delete document.documentElement.dataset.theme;
+ $('#theme').innerHTML=ic(dark?'sun':'moon');
+}
+// Navigates to a page by drawing its template into the workspace and attaching its event handlers.
+function go(p){S.page=p;body.classList.remove('open');renderNav();$('#view').classList.toggle('chatv',p==='assistant');$('#view').innerHTML=V[p]();$('#view').scrollTop=0;bind()}
+
+/* COMPONENTS: small reusable HTML builders (empty state, page header, chat input, chips, tab switcher) used across pages. */
+const emptyState=(i,t,d,btn)=>`<div class="empty"><div class="ico">${ic(i)}</div><b>${t}</b><p>${d}</p>${btn||''}</div>`;
+const head=(t,d,b)=>`<h1 style="font-size:28px">${t}${b?`<span class="badge">${b}</span>`:''}</h1><p class="sub" style="font-size:15px">${d}</p>`;
+const chatInput=(ph)=>`<form class="chatbox" id="cform"><textarea id="cin" rows="1" placeholder="${ph}" aria-label="Message FinBot"></textarea><button class="btn" id="sbtn" aria-label="Send">${ic('send')}</button></form>`;
+const chips=()=>`<div class="chips">${EX.map(e=>`<button class="chip" data-ex="${esc(e)}">${esc(e)}</button>`).join('')}</div>`;
+const seg=(opts,cur)=>`<div class="seg">${opts.map(o=>`<button data-seg="${o[0]}" class="${cur===o[0]?'on':''}">${o[1]}</button>`).join('')}</div>`;
+
+// PAGE TEMPLATES: each entry returns the HTML for one section, using empty states wherever real data does not exist yet.
+const V={
+home:()=>`<div class="wrap"><h1>Your finances, understood.</h1><p class="sub">Explore markets, analyse financial data, and make sense of your money with FinBot.</p>
+<div class="grid4">${[['Personal Finance','Track spending and understand where your money goes.','user','expenses'],['Market Intelligence','Follow markets, news and company context.','market','market'],['Stock Screener','Filter stocks by the criteria that matter to you.','screen','screener'],['Financial Tools','Calculators for savings, investing and loans.','tool','calculator']].map(c=>`<button class="card hc" data-go="${c[3]}"><div class="ico">${ic(c[2])}</div><b>${c[0]}</b><p>${c[1]}</p></button>`).join('')}</div>
+${chatInput('Ask FinBot about markets, budgeting or investing…')}${chips()}</div>`,
+
+overview:()=>`<div class="wrap">${head('Overview','A summary of your finances will appear here once data is connected.')}
+<div class="stats">${['Net worth','Monthly spending','Portfolio value'].map(t=>`<div class="card"><small>${t}</small><div class="ph" data-tip="No data connected">—</div></div>`).join('')}</div>
+${emptyState('overview','No financial data yet','FinBot doesn’t display balances until you connect or import your own data. That feature is coming in a later stage.','<button class="btn sec" disabled>Connect data (coming soon)</button>')}</div>`,
+
+assistant:()=>assistantPage(),
+
+market:()=>marketPage(),
+
+screener:()=>screenerPage(),
+
+watchlist:()=>watchlistPage(),
+
+compare:()=>comparePage(),
+
+expenses:()=>`<div class="wrap">${head('Expense Analysis','Categorise spending and spot trends.','Coming soon')}
+<div class="stats">${['Total spent','Top category','Monthly average'].map(t=>`<div class="card"><small>${t}</small><div class="ph">—</div></div>`).join('')}</div>
+${emptyState('up','No expenses imported','Upload a bank statement or CSV to analyse your spending. Import isn’t built yet.','<button class="btn sec" disabled>Upload CSV (coming soon)</button>')}</div>`,
+
+calculator:()=>{const c=S.calc;const fld=(id,l,v)=>`<div><label for="${id}">${l}</label><input class="f" id="${id}" type="number" min="0" step="any" value="${v}"></div>`;
+ return `<div class="wrap">${head('Financial Calculator','Illustrative maths with your own inputs. Not financial advice.')}
+ ${seg([['compound','Compound growth'],['loan','Loan EMI']],c)}
+ <div class="card">${c==='compound'?`<div class="row">${fld('a1','Starting amount',10000)}${fld('a2','Monthly contribution',500)}${fld('a3','Annual return (%)',7)}${fld('a4','Years',10)}</div>`:`<div class="row">${fld('a1','Loan amount',100000)}${fld('a3','Annual interest (%)',9)}${fld('a4','Term (years)',5)}</div>`}
+ <div id="out" aria-live="polite"></div></div></div>`}
+,
+settings:()=>settingsPage()
+};
+
+/* BEHAVIOUR: the interactive logic for the calculator, chat, watchlist, theme and all clicks. */
+const fmt=n=>isFinite(n)?n.toLocaleString(undefined,{maximumFractionDigits:2}):'—';
+// Calculates compound growth or a loan's monthly payment from the user's own inputs and shows the result.
+function calc(){const o=$('#out');if(!o)return;const v=id=>parseFloat(($('#'+id)||{}).value)||0;
+ if(S.calc==='compound'){const P=v('a1'),m=v('a2'),r=v('a3')/1200,n=v('a4')*12;let b=P;for(let i=0;i<n;i++)b=b*(1+r)+m;const put=P+m*n;
+  o.innerHTML=`<small style="color:var(--tx2)">Projected value</small><div class="res">${fmt(b)}</div><p class="empty-s" style="padding:0">Contributed ${fmt(put)} · Growth ${fmt(b-put)}. Assumes a constant return, compounded monthly.</p>`}
+ else{const P=v('a1'),r=v('a3')/1200,n=v('a4')*12;const e=n?(r?P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):P/n):0;
+  o.innerHTML=`<small style="color:var(--tx2)">Monthly payment</small><div class="res">${fmt(e)}</div><p class="empty-s" style="padding:0">Total paid ${fmt(e*n)} · Total interest ${fmt(e*n-P)}.</p>`}}
+// Attaches form and button handlers to whichever page was just drawn, since pages are rebuilt on every navigation.
+function bind(){
+ bindChat();
+ const cf=$('#cform');if(cf)cf.onsubmit=e=>{e.preventDefault();const t=$('#cin'),v=t.value;t.value='';t.style.height='auto';send(v)};
+  if(S.page==='calculator'){document.querySelectorAll('.f').forEach(i=>i.oninput=calc);calc()}
+ const sw=$('#swt');if(sw)sw.onclick=()=>toggleTheme();
+ const cl=$('#clr');if(cl)cl.onclick=()=>{if(confirm('Clear all saved conversations, watchlists and the comparison selection from this browser?')){S.convos=[];S.watch=[];S.cur=null;save();wlReset();go('settings')}};
+}
+// Flips between light and dark mode and remembers the choice in the browser.
+function toggleTheme(){const dark=S.theme?S.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;S.theme=dark?'light':'dark';store.set('theme',S.theme);applyTheme();if(S.page==='settings')go('settings')}
+
+// Single click handler that routes every navigation link, example prompt, history item, delete and remove button.
+document.addEventListener('click',e=>{
+ const t=e.target.closest('[data-go],[data-ex],[data-c],[data-del],[data-rm],[data-seg]');if(!t)return;
+ if(t.dataset.del){e.stopPropagation();S.convos=S.convos.filter(c=>c.id!=t.dataset.del);if(S.cur==t.dataset.del)S.cur=null;save();renderNav();if(S.page==='assistant')go('assistant');return}
+ if(t.dataset.go)return go(t.dataset.go);
+ if(t.dataset.ex)return send(t.dataset.ex);
+ if(t.dataset.c){S.cur=+t.dataset.c;return go('assistant')}
+ if(t.dataset.rm){S.watch=S.watch.filter(x=>x!==t.dataset.rm);save();return go('watchlist')}
+ if(t.dataset.seg){S.calc=t.dataset.seg;return go('calculator')}
+});
+$('#newchat').onclick=()=>{S.cur=null;go('assistant');const i=$('#cin');if(i)i.focus()};
+$('#theme').onclick=toggleTheme;
+$('#colbtn').onclick=()=>body.classList.toggle('col');
+$('#menu').onclick=()=>body.classList.add('open');
+$('#scrim').onclick=()=>body.classList.remove('open');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')body.classList.remove('open')});
+document.querySelector('.brand .logo').style.cursor='pointer';
+document.querySelector('.brand .logo').onclick=()=>go('home');
+/* AI ASSISTANT: the finance tools, provider connections, demo engine, markdown renderer and chat flow that make the conversation work. */
+// ==FINLOGIC==
+// STATE: provider choice, backend address and the in-flight request, stored alongside the existing app state.
+Object.assign(S,{provider:store.get('provider',null),backendUrl:store.get('backendUrl','/api/chat'),busy:null,partial:'',ctl:null,sample:null});
+const round=n=>Math.round(n*100)/100;
+const inr=n=>'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+const E=(code,message)=>Object.assign(new Error(message),{code});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const cur=()=>S.convos.find(x=>x.id===S.cur);
+const prov=()=>S.provider||(S.sample?'platform':S.backendReady?'backend':'demo');
+
+// FINANCE TOOLS: the only place numbers are calculated, so neither the AI nor the demo engine ever does its own arithmetic.
+const TOOLS={
+ emi:{description:'Compute a loan EMI (reducing balance, monthly compounding). Convert lakh=100000 and crore=10000000 to rupees first.',
+  inputSchema:{type:'object',properties:{principal:{type:'number',description:'Loan amount in rupees'},annual_rate_pct:{type:'number',description:'Interest rate per year in percent'},years:{type:'number'},months:{type:'number'}},required:['principal','annual_rate_pct']},
+  run(a){const n=a.months||Math.round((a.years||0)*12);if(!(a.principal>0)||!(n>0)||!(a.annual_rate_pct>=0))throw new Error('principal, rate and tenure (years or months) must be positive');
+   const r=a.annual_rate_pct/1200,e=r?a.principal*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):a.principal/n;
+   return{monthly_emi:round(e),months:n,total_payment:round(e*n),total_interest:round(e*n-a.principal),method:'reducing balance, monthly compounding'}}},
+ compound:{description:'Project the future value of a lump sum and/or monthly SIP/contribution at a constant annual return. Amounts in rupees.',
+  inputSchema:{type:'object',properties:{principal:{type:'number'},monthly_contribution:{type:'number'},annual_rate_pct:{type:'number'},years:{type:'number'}},required:['annual_rate_pct','years']},
+  run(a){const n=Math.round((a.years||0)*12),r=(a.annual_rate_pct||0)/1200,P=a.principal||0,m=a.monthly_contribution||0;
+   if(!(n>0)||P<0||m<0||(P===0&&m===0))throw new Error('need years>0 and a principal and/or monthly_contribution');
+   let b=P;for(let i=0;i<n;i++)b=b*(1+r)+m;const put=P+m*n;
+   return{future_value:round(b),total_invested:round(put),growth:round(b-put),assumption:'constant annual return, compounded monthly, contributions at month end'}}},
+ expenses:{description:'Summarise expenses by category with totals and percentage shares.',
+  inputSchema:{type:'object',properties:{items:{type:'array',items:{type:'object',properties:{category:{type:'string'},amount:{type:'number'}},required:['category','amount']}}},required:['items']},
+  run(a){const it=(a.items||[]).filter(i=>i&&i.amount>0);if(!it.length)throw new Error('items needs [{category, amount}] with positive amounts');
+   const by={};it.forEach(i=>{const k=String(i.category||'Other').trim();by[k]=(by[k]||0)+Number(i.amount)});
+   const total=Object.values(by).reduce((x,y)=>x+y,0);
+   const rows=Object.entries(by).sort((x,y)=>y[1]-x[1]).map(([category,amount])=>({category,amount:round(amount),share_pct:round(amount/total*100)}));
+   return{total:round(total),by_category:rows,largest:rows[0].category}}},
+ market_data:{description:'Fetch historical prices or market facts for a stock symbol. Call this BEFORE stating any price, return or market figure.',
+  inputSchema:{type:'object',properties:{symbol:{type:'string'},period:{type:'string'}},required:['symbol']},
+  run(){throw new Error('Market data is only available when the chat provider is Your Python backend (python app.py). Do not state prices, returns or other market figures.')}}
+};
+const SYS="You are FinBot, a finance assistant for users in India. Use ₹ and Indian grouping; understand lakh (1,00,000), crore (1,00,00,000), EMI, SIP, PPF, EPF, NPS, FD/RD, ELSS, GST, CIBIL, Nifty/Sensex, SEBI, RBI, demat. Rules: (1) Use the tools for every calculation (emi, compound, expenses); never do arithmetic yourself. (2) For any stock price, return or market fact, call market_data first; if it errors, say the data is unavailable and explain concepts only. Never invent numbers or market facts. (3) If inputs are missing, ask, or state clearly labelled assumptions. (4) Separate Facts, Calculations (tool results), Assumptions and Estimates; explain uncertainty; never guarantee returns; this is educational, not personal advice. (5) Be concise; use markdown and tables when comparing.";
+
+// SCREENER INTENT: recognises stock-screening questions so they are answered from the stored scan rather than guessed.
+const isScreenIntent=q=>/strongest|weakest|best[- ]performing|worst[- ]performing|top[- ]performing|top (\d+ )?(gainers|losers)|highly volatile|high volatility|low volatility|(above|below|over|under) (their |its |the )?(20|50|200)[- ]?(day|dma|sma|moving)|positive (?:[\w-]+ ){0,2}returns|negative (?:[\w-]+ ){0,2}returns|\b(banking|bank|pharma|steel|cement|insurance) stocks\b|\bscreen(er)?\b/i.test(q);
+// COMPARE INTENT: recognises 'compare A and B [over a period]' and returns the names and range (null when no stocks are named).
+function parseCompare(q){const m=String(q).replace(/[.?!]+$/,'').match(/\bcompare\s+(.+)/i);if(!m)return null;let body=m[1],range='1y';
+ for(const [re,r] of [[/\b(?:over|for|during|in)?\s*(?:the\s+)?(?:last|past)?\s*(?:1|one)[ -]?month\b/i,'1mo'],[/\b(?:over|for|during|in)?\s*(?:the\s+)?(?:last|past)?\s*(?:3|three)[ -]?months?\b/i,'3mo'],[/\b(?:over|for|during|in)?\s*(?:the\s+)?(?:last|past)?\s*(?:6|six)[ -]?months?\b/i,'6mo'],[/\b(?:over|for|during|in)?\s*(?:the\s+)?(?:last|past)?\s*(?:(?:1|one)[ -]?year|12 months|year)\b/i,'1y'],[/\b(?:over|for|during|in)?\s*(?:the\s+)?(?:last|past)?\s*(?:5|five)[ -]?years?\b/i,'5y'],[/\b(?:over|for|during|in)?\s*(?:the\s+)?(?:max(?:imum)?|all time)\b/i,'max']])if(re.test(body)){range=r;body=body.replace(re,' ');break}
+ body=body.replace(/\s+(over|for|during|in|since)\s*$/i,'').replace(/\s+/g,' ').trim();
+ const names=body.split(/\s*(?:,|\band\b|\bvs\.?\b|\bversus\b|\bwith\b|&)\s*/i).map(x=>x.trim()).filter(Boolean);
+ if(names.length<2||names.length>6||names.some(n=>/\b(two|three|some|several|stocks|shares|banking|historical|performance)\b/i.test(n)))return null;return{names,range}}
+// PARSING: reads rupee amounts written as 5 lakh, ₹2.5 crore, 50k or 5,00,000 from free text.
+const num=(t,re)=>{const m=t.match(re);return m?parseFloat(m[1]):null};
+function findAmount(t){const s=t.toLowerCase().replace(/,/g,'');
+ let m=s.match(/(?:₹|rs\.?\s*|inr\s*)?(\d+(?:\.\d+)?)\s*(crores?|cr|lakhs?|lacs?|lac|k)\b/);
+ if(m)return parseFloat(m[1])*(/^cr/.test(m[2])?1e7:/^la/.test(m[2])?1e5:1e3);
+ m=s.match(/(?:₹|rs\.?\s*|inr\s*)(\d+(?:\.\d+)?)/);if(m)return parseFloat(m[1]);
+ const big=(s.match(/\d+(?:\.\d+)?/g)||[]).map(Number).filter(n=>n>=1000);return big.length?Math.max(...big):null}
+
+// DEMO ENGINE: an explicitly labelled fallback that recognises a few request types and answers using only the finance tools above, with no AI model.
+function demo(q){
+ const t=q.toLowerCase(),used=[];const run=(n,a)=>{used.push(n);return TOOLS[n].run(a)};
+ if(t.trim()==='/fail')throw E('demo_failure','Simulated failure (demo-mode test command).');
+ if(/\bemi\b|loan|repay|mortgage/.test(t)){
+  const P=findAmount(q);if(!P)return{used,text:'Tell me the loan amount, for example: **EMI on ₹5 lakh at 10% for 5 years**.'};
+  let r=num(q,/(\d+(?:\.\d+)?)\s*(?:%|percent)/),n=num(q,/(\d+)\s*(?:months?|mos?)\b/)||(num(q,/(\d+(?:\.\d+)?)\s*(?:years?|yrs?|y)\b/)||0)*12;const as=[];
+  if(r==null){r=10;as.push('an interest rate of **10% p.a.**')}if(!n){n=60;as.push('a tenure of **5 years**')}
+  const x=run('emi',{principal:P,annual_rate_pct:r,months:Math.round(n)});
+  return{used,text:`### EMI estimate\n| Item | Value |\n|---|---|\n| Loan amount | ${inr(P)} |\n| Interest rate | ${r}% p.a. |\n| Tenure | ${Math.round(n)} months |\n| **Monthly EMI** | **${inr(x.monthly_emi)}** |\n| Total interest | ${inr(x.total_interest)} |\n| Total payment | ${inr(x.total_payment)} |\n\n**Calculation:** from the app's EMI function (${x.method}).\n${as.length?`**Assumptions:** I assumed ${as.join(' and ')} because you did not give them. Send your real numbers for an accurate figure.\n`:''}**Note:** lenders may add processing fees and GST, so your actual schedule can differ.`}}
+ if(/expense|spend|spending|budget/.test(t)){
+  const items=[];q.split('\n').forEach(l=>{const m=l.match(/^\s*[-*•]?\s*([A-Za-z][A-Za-z &\/]*?)\s*[:\-–=]?\s*(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(k|lakhs?)?\s*$/i);if(m)items.push({category:m[1].trim(),amount:parseFloat(m[2].replace(/,/g,''))*(m[3]?(/^k/i.test(m[3])?1e3:1e5):1)})});
+  if(items.length<2)return{used,text:'Paste your monthly expenses, **one per line**, and I will total and rank them:\n\n```\nRent 15000\nFood 8000\nTransport 2500\nSubscriptions 999\n```\nA common rule of thumb (not a rule) is 50% needs, 30% wants, 20% savings; your own goals matter more.'};
+  const x=run('expenses',{items});
+  return{used,text:`### Expense breakdown\n| Category | Amount | Share |\n|---|---|---|\n${x.by_category.map(r=>`| ${r.category} | ${inr(r.amount)} | ${r.share_pct}% |`).join('\n')}\n| **Total** | **${inr(x.total)}** | 100% |\n\n**Calculation:** totals and shares come from the app's expense function. Your largest category is **${x.largest}**.\n**Note:** I only analyse the figures you pasted; I cannot tell whether they are complete.`}}
+ if(/compound|\bsip\b|interest|fixed deposit|\bfd\b|recurring/.test(t)){
+  const amt=findAmount(q),mc=q.toLowerCase().replace(/,/g,'').match(/(\d+(?:\.\d+)?)\s*(k|lakhs?)?\s*(?:per month|\/\s*month|monthly|a month)/);
+  const contrib=mc?parseFloat(mc[1])*(mc[2]?(mc[2]==='k'?1e3:1e5):1):0;let P=amt&&amt!==contrib?amt:0;const as=[];
+  if(!P&&!contrib){P=100000;as.push('a starting amount of **₹1,00,000**')}
+  let r=num(q,/(\d+(?:\.\d+)?)\s*(?:%|percent)/),y=num(q,/(\d+(?:\.\d+)?)\s*(?:years?|yrs?|y)\b/);
+  if(r==null){r=8;as.push('a return of **8% p.a.**')}if(y==null){y=10;as.push('**10 years**')}
+  const x=run('compound',{principal:P,monthly_contribution:contrib,annual_rate_pct:r,years:y});
+  return{used,text:`### Compound interest\nYour money earns returns, and later those returns earn returns too, so growth speeds up over time.\n\n| Item | Value |\n|---|---|\n| Starting amount | ${inr(P)} |\n| Monthly contribution | ${inr(contrib)} |\n| Return and duration | ${r}% p.a. for ${y} years |\n| Total invested | ${inr(x.total_invested)} |\n| **Projected value** | **${inr(x.future_value)}** |\n| Growth | ${inr(x.growth)} |\n\n**Calculation:** from the app's compound function (${x.assumption}).\n${as.length?`**Assumptions:** ${as.join(', ')}.\n`:''}**Uncertainty:** real investments fluctuate and returns are never guaranteed; this is an illustration, not a forecast.`}}
+ if(/stock|share|nifty|sensex|return|compare|price|portfolio|mutual fund|performance/.test(t)){
+  let why='';try{run('market_data',{symbol:'?'})}catch(e){why=e.message}
+  return{used,text:`### Market data isn't available\n${why}\n\nSo I won't quote prices, returns or comparisons; any numbers would be made up.\n\n**To compare real stocks:** name them, for example *Compare Reliance and TCS over 1 year*, or use the Compare page.\n\n**What I can explain now:** to compare two stocks over time, look at **CAGR** (smoothed yearly return), **volatility** (how much returns swing), **maximum drawdown** (worst peak-to-trough fall) and dividends, over the *same* dates, and remember past performance does not predict future returns.`}}
+ return{used,text:'**Demo mode** only understands four things: EMI/loan questions, compound interest/SIP, expense analysis, and (explaining that) market data is not connected. Choose a live provider in **Settings** for open-ended questions.'}}
+
+// MARKDOWN: a small safe renderer (headings, lists, bold, italics, code, tables) that escapes HTML first so replies cannot inject markup.
+function md(s){
+ const e=x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+ const inl=x=>e(x).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/(^|[^*])\*([^*\s][^*]*)\*/g,'$1<i>$2</i>');
+ const L=String(s).replace(/\r/g,'').split('\n'),sep=/^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/,li=/^\s*[-*]\s+/,ol=/^\s*\d+[.)]\s+/;
+ const row=r=>r.trim().replace(/^\||\|$/g,'').split('|').map(c=>c.trim());let o='',i=0;
+ while(i<L.length){const l=L[i];let m;
+  if(l.trim().startsWith('```')){let b=[];i++;while(i<L.length&&!L[i].trim().startsWith('```')){b.push(L[i]);i++}i++;o+=`<pre><code>${e(b.join('\n'))}</code></pre>`;continue}
+  if(l.includes('|')&&i+1<L.length&&sep.test(L[i+1])){const hd=row(l);i+=2;let b='';while(i<L.length&&L[i].includes('|')&&L[i].trim()){b+='<tr>'+row(L[i]).map(c=>`<td>${inl(c)}</td>`).join('')+'</tr>';i++}
+   o+=`<div class="tw"><table><thead><tr>${hd.map(c=>`<th>${inl(c)}</th>`).join('')}</tr></thead><tbody>${b}</tbody></table></div>`;continue}
+  if(m=l.match(/^#{1,4}\s+(.*)/)){o+=`<h4>${inl(m[1])}</h4>`;i++;continue}
+  if(li.test(l)){let b='';while(i<L.length&&li.test(L[i])){b+=`<li>${inl(L[i].replace(li,''))}</li>`;i++}o+=`<ul>${b}</ul>`;continue}
+  if(ol.test(l)){let b='';while(i<L.length&&ol.test(L[i])){b+=`<li>${inl(L[i].replace(ol,''))}</li>`;i++}o+=`<ol>${b}</ol>`;continue}
+  if(!l.trim()){i++;continue}
+  const p=[];while(i<L.length&&L[i].trim()&&!/^(#{1,4}\s|```)/.test(L[i].trim())&&!li.test(L[i])&&!ol.test(L[i])&&!(L[i].includes('|')&&i+1<L.length&&sep.test(L[i+1]))){p.push(inl(L[i]));i++}
+  o+=`<p>${p.join('<br>')}</p>`}
+ return o}
+
+// CONVERSATION CONTEXT: turns saved messages into the alternating user/assistant list sent to the model, skipping failed replies so follow-ups keep their context.
+function hist(c){const out=[];for(const m of c.msgs){if(m.err)continue;const role=m.r==='u'?'user':'assistant';
+ if(out.length&&out[out.length-1].role===role)out[out.length-1].content+='\n\n'+m.t;else out.push({role,content:m.t})}
+ const h=out.slice(-16);while(h.length&&h[0].role!=='user')h.shift();return h}
+
+// PROVIDERS: three interchangeable ways to get an answer (platform AI, your Python backend, or the labelled demo engine).
+async function askPlatform(h,onText,signal,used){
+ const tools=Object.entries(TOOLS).map(([name,t])=>({name,description:t.description,inputSchema:t.inputSchema,execute:async a=>{used.push(name);return t.run(a||{})}}));
+ const msgs=h.map((m,i)=>i?m:{role:m.role,content:SYS+'\n\n---\nUser message:\n'+m.content});
+ const r=await S.sample(msgs,{tools,onText:({text})=>onText(text),signal,cache:false});
+ return r.text+(r.truncated?'\n\n*(The response was cut short.)*':'')}
+async function askBackend(h,signal,used){
+ let r;try{r=await fetch(S.backendUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:h}),signal})}
+ catch(e){if(e.name==='AbortError')throw e;throw E('network','Could not reach the backend at '+S.backendUrl+'. Start it with python app.py, or fix the URL in Settings.')}
+ let d={};try{d=await r.json()}catch(e){}
+ if(!r.ok)throw E('http',d.error||('The backend returned HTTP '+r.status+'.'));
+ (d.tools_used||[]).forEach(x=>used.push(x));return d.text}
+async function answer(c,used){
+ const p=prov(),h=hist(c);
+ if(p==='platform'){if(!S.sample)throw E('unavailable','The platform AI is not available here (for example when the page is self-hosted). Pick the backend or demo provider in Settings.');
+  return{src:'Live AI',text:await askPlatform(h,t=>{S.partial=t;const el=$('#pend .md');if(el){el.classList.remove('load');el.innerHTML=md(t);scrollEnd()}},S.ctl.signal,used)}}
+ if(p==='backend')return{src:'Backend AI',text:await askBackend(h,S.ctl.signal,used)};
+ if(isScreenIntent(h[h.length-1].content)){const q=h[h.length-1].content;try{const d=await mget('screener/nl',{q,page_size:10},S.ctl.signal);used.push('screener');return{src:'Demo mode · stored scan',text:screenReply(d)}}catch(e){if(e&&e.name==='AbortError')throw e;return{src:'Demo mode (no AI model)',text:'**Screening needs the Python backend and a completed scan.** '+mktErr(e||{})}}}
+ const pc=parseCompare(h[h.length-1].content);if(pc){try{const ms=[];for(const n of pc.names){const r=await mget('search',{q:n,limit:1},S.ctl.signal);if(!r.results.length)return{src:'Demo mode · stored data',text:`I could not find an instrument matching **${n}**. Try the company name or ticker, for example *Compare Reliance and TCS*.`};ms.push(r.results[0])}
+  const d=await mget('compare',{ids:ms.map(x=>x.id).join(','),range:pc.range,fundamentals:0},S.ctl.signal);used.push('compare');return{src:'Demo mode · retrieved data',text:compareReply(d,ms,pc.names)}}catch(e){if(e&&e.name==='AbortError')throw e;return{src:'Demo mode (no AI model)',text:'**Comparison needs the Python backend.** '+mktErr(e||{})}}}
+ await sleep(300);if(S.ctl.signal.aborted)throw E('aborted','stopped');
+ const r=demo(h[h.length-1].content);used.push(...r.used);return{src:'Demo mode (no AI model)',text:r.text}}
+
+// ERRORS: converts technical failures into short messages that say what happened and what to do next.
+function errMsg(e){const c=e&&e.code;
+ if(S.ctl&&S.ctl.signal.aborted||c==='aborted'||(e&&e.name==='AbortError'))return 'The response was stopped. Press Retry to ask again.';
+ if(c==='not_granted')return 'Permission to use the AI was not granted. Allow it when prompted, then retry.';
+ if(c==='rate_limited')return 'Too many requests right now. Wait a moment, then retry.';
+ return (e&&e.message)||'Unexpected error. Please retry.'}
+
+// CHAT FLOW: send() records the user message and run() gets the reply, saving either the answer or a retryable error.
+async function send(text){
+ text=(text||'').trim();if(!text||S.busy)return;
+ let c=cur();if(!c){c={id:Date.now(),title:text.slice(0,40),msgs:[]};S.convos.unshift(c);S.cur=c.id}
+ c.msgs.push({r:'u',t:text});save();
+ if(S.page!=='assistant')go('assistant');else refresh();
+ await run(c)}
+async function run(c){
+ S.busy=c.id;S.partial='';S.ctl=new AbortController();refresh();const used=[];let msg;
+ try{const a=await answer(c,used);msg={r:'a',t:a.text||'The assistant returned an empty response.',src:a.src,tools:[...new Set(used)]};if(!a.text)msg.err=1}
+ catch(e){msg={r:'a',err:1,t:errMsg(e)}}
+ c.msgs.push(msg);S.busy=null;S.ctl=null;S.partial='';save();refresh()}
+// ==/FINLOGIC==
+
+// CHAT UI: draws the assistant page, message bubbles and settings, and keeps them in sync with the conversation state.
+const scrollEnd=()=>{const m=$('#msgs');if(m)m.scrollTop=m.scrollHeight};
+const provLabel=()=>{const p=prov();return p==='platform'?(S.sample?'Live AI':'Unavailable'):p==='backend'?'Backend AI':'Demo mode'};
+const provStat=()=>{const p=prov();return p==='platform'?(S.sample?'Connected.':'Not available in this environment (for example when self-hosted).'):p==='backend'?'Calls '+S.backendUrl+' (run python app.py with your key set).':'No AI model is used; only built-in calculators.'};
+const bub=(m,i)=>m.r==='u'?`<div class="m u">${esc(m.t)}</div>`:`<div class="m a ${m.err?'err':''}"><div class="md">${m.err?`<b>Something went wrong.</b> ${esc(m.t)}`:md(m.t)}</div><div class="meta">${m.err?'<button class="btn sm" data-retry>Retry</button>':`<button class="btn sec sm" data-copy="${i}">Copy</button><span>${esc(m.src||'')}${m.tools&&m.tools.length?' · tools: '+esc(m.tools.join(', ')):''}</span>`}</div></div>`;
+function msgsHtml(){const c=cur();
+ if(!c||!(c.msgs.length||S.busy===c.id))return emptyState('chat','Start a conversation','Type a question below or pick an example prompt.')+chips();
+ let h=c.msgs.map(bub).join('');
+ if(S.busy===c.id)h+=`<div class="m a" id="pend"><div class="md ${S.partial?'':'load'}">${S.partial?md(S.partial):'Thinking…'}</div><div class="meta"><button class="btn sec sm" data-stop>Stop</button></div></div>`;
+ return h}
+function drawChat(){const el=$('#msgs');if(!el)return;el.innerHTML=msgsHtml();scrollEnd();const b=$('#sbtn');if(b){b.disabled=!!S.busy;b.title=S.busy?'Wait for the current reply':'Send'}}
+function refresh(){renderNav();if(S.page==='assistant')drawChat()}
+function assistantPage(){return `<div class="chat">${head('AI Assistant','Ask about budgeting, loans, investing and financial concepts.',`<span id="provbadge">${provLabel()}</span>`)}
+ ${prov()==='demo'?'<div class="note">Demo mode: replies come from built-in calculators and templates, not an AI model. Choose a provider in <button class="lnk" data-go="settings">Settings</button>.</div>':''}
+ <div class="msgs" id="msgs">${msgsHtml()}</div>${chatInput('Ask FinBot…  (Enter to send, Shift+Enter for a new line)')}<p class="empty-s" style="padding:6px 0 0">Educational information, not financial advice.</p></div>`}
+function settingsPage(){const dark=document.documentElement.dataset.theme==='dark'||(!S.theme&&matchMedia('(prefers-color-scheme:dark)').matches),p=prov();
+ return `<div class="wrap">${head('Settings','Appearance and AI provider.')}
+ <div class="card" style="margin-bottom:16px"><b>AI provider</b><p class="empty-s" style="padding:2px 0 10px"><span id="provstat">${provStat()}</span></p>
+ <div class="row"><div><label for="prov">Provider</label><select class="f" id="prov">${[['platform','Platform AI (preview hosting only)'],['backend','Your Python backend'],['demo','Demo mode (no AI model)']].map(o=>`<option value="${o[0]}" ${p===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
+ <div><label for="burl">Backend URL</label><input class="f" id="burl" value="${esc(S.backendUrl)}"></div></div>
+ <p class="empty-s" style="padding:0">API keys never belong in this page. Set <code>ANTHROPIC_API_KEY</code> as an environment variable for <code>app.py</code>, which makes the AI call on the server.</p></div>
+ <div class="card"><div class="tg"><div><b>Dark mode</b><div class="empty-s" style="padding:0">Overrides your system setting.</div></div><button class="sw ${dark?'on':''}" id="swt" role="switch" aria-label="Dark mode"></button></div>
+ <div class="tg"><div><b>Clear saved data</b><div class="empty-s" style="padding:0">Removes conversations and watchlist from this browser.</div></div><button class="btn sec" id="clr">Clear</button></div></div></div>`}
+function bindChat(){
+ const t=$('#cin');if(t){t.oninput=()=>{t.style.height='auto';t.style.height=Math.min(t.scrollHeight,160)+'px'};if(S.page==='assistant'&&matchMedia('(min-width:861px)').matches)t.focus()}
+ if(S.page==='assistant')drawChat();
+ if(S.page==='market')bindMarket();
+ if(S.page==='screener')bindScreener();
+ if(S.page==='watchlist')bindWatchlist();
+ if(S.page==='compare')bindCompare();
+ const pv=$('#prov');if(pv)pv.onchange=()=>{S.provider=pv.value;store.set('provider',S.provider);$('#provstat').textContent=provStat()};
+ const bu=$('#burl');if(bu)bu.onchange=()=>{S.backendUrl=bu.value.trim()||'/api/chat';store.set('backendUrl',S.backendUrl);$('#provstat').textContent=provStat()}}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing&&e.target.id==='cin'){e.preventDefault();$('#cform').requestSubmit()}});
+document.addEventListener('click',async e=>{const t=e.target.closest('[data-copy],[data-retry],[data-stop]');if(!t)return;
+ if(t.hasAttribute('data-stop')){if(S.ctl)S.ctl.abort();return}
+ if(t.hasAttribute('data-retry')){const c=cur();if(c&&!S.busy&&c.msgs.length&&c.msgs[c.msgs.length-1].err){c.msgs.pop();save();run(c)}return}
+ const m=cur().msgs[+t.dataset.copy];let ok=true;
+ try{await navigator.clipboard.writeText(m.t)}catch(x){const a=document.createElement('textarea');a.value=m.t;document.body.appendChild(a);a.select();try{ok=document.execCommand('copy')}catch(y){ok=false}a.remove()}
+ t.textContent=ok?'Copied':'Copy failed';setTimeout(()=>{t.textContent='Copy'},1500)});
+/* MARKET INTELLIGENCE: universal stock search (autocomplete, market and exchange filters), stock details and data-coverage reporting, all fed by the backend's /api/market routes. */
+// ==MKTLOGIC==
+// MARKET STATE: the current filters, suggestions, results, selected stock and provider status, kept so the page survives navigation.
+const M={market:'all',exchange:'all',q:'',sugg:[],act:-1,res:null,sel:null,selId:null,range:'1y',status:null,err:null,ctl:null,tm:null};
+Object.assign(M,{view:'price',ov:{20:false,50:false,200:false,vol:true,rsi:false},req:0,fund:null,fundId:null});
+// API CALL: requests one market route and converts every failure into {code,message} so the UI can explain it.
+async function mget(path,params,signal){
+ const base=S.backendUrl.replace(/\/chat$/,'')+'/market/';let r;
+ try{r=await fetch(base+path+'?'+new URLSearchParams(params),{signal})}
+ catch(e){if(e.name==='AbortError')throw e;throw{code:'backend_unreachable',message:'Cannot reach the market-data backend ('+base+'). Market data needs the Python server: run python app.py. A static preview or page-only host cannot provide it.'}}
+ let d;try{d=await r.json()}catch(e){throw{code:'bad_response',message:'This server did not return market data. Run the Python backend (python app.py) instead of a static file server.'}}
+ if(!r.ok)throw d.error||{code:'http',message:'The server returned HTTP '+r.status+'.'};return d}
+// ERROR TEXT: turns an error code into a short explanation of what happened and what to do.
+function mktErr(e){const m=e.message||'Something went wrong.';
+ return({no_data:m+' Try a different range, or check whether the security is still listed.',rate_limited:m+' Wait a minute, then retry.',timeout:'The data provider timed out. Retry in a moment.',missing_credentials:m,invalid_symbol:m,ambiguous_symbol:m})[e.code]||m}
+// FORMATTING: price display with the right currency symbol (never assumes a currency) and an inline SVG price line.
+const px=(n,cur)=>{if(n==null)return '—';const s=Number(n).toLocaleString(cur==='INR'?'en-IN':'en-US',{maximumFractionDigits:2});return cur==='INR'?'₹'+s:cur==='USD'?'$'+s:s+(cur?' '+cur:'')};
+function spark(b,neg){if(!b||b.length<2)return '';const W=600,H=140,v=b.map(x=>x[1]),mn=Math.min(...v),mx=Math.max(...v),sp=mx-mn||1;
+ const pts=b.map((x,i)=>(i/(b.length-1)*W).toFixed(1)+','+(H-6-(x[1]-mn)/sp*(H-12)).toFixed(1)).join(' ');
+ return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Closing price from ${b[0][0]} to ${b[b.length-1][0]}"><polyline points="${pts}" fill="none" stroke="${neg?'var(--red)':'var(--g)'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}
+// ==/MKTLOGIC==
+
+// MARKET PAGE: the search controls and result areas; the functions below fill them in.
+function marketPage(){return `<div class="wrap">${head('Market Intelligence','Search any stock covered by the configured data providers, then load its price history.','Stage 3')}
+<div id="mstat"></div>
+<div class="card" style="margin-bottom:16px"><div class="mrow">
+<div style="width:165px"><label for="mmk">Market</label><select class="f" id="mmk"><option value="all">All markets</option><option value="India">India</option><option value="United States">United States</option><option value="Other">Other markets</option></select></div>
+<div style="width:200px"><label for="mex">Exchange</label><select class="f" id="mex"><option value="all">All exchanges</option></select></div>
+<div class="ac"><label for="mq">Company, ticker or sector</label><input class="f" id="mq" role="combobox" aria-expanded="false" aria-controls="msug" autocomplete="off" placeholder="e.g. Reliance, HDFC Bank, AAPL, semiconductors"><ul class="sug" id="msug" role="listbox" hidden></ul></div>
+<div style="align-self:flex-end"><button class="btn" id="msb">Search</button></div></div></div>
+<div id="mres"></div><div id="mdet"></div><div id="mcov"></div></div>`}
+const badge=(t,c)=>`<span class="xb ${c||''}">${esc(t)}</span>`;
+const itemRow=i=>`<span class="tkr">${esc(i.symbol)}</span><span>${esc(i.name)}</span>${badge(i.exchange)}${i.currency?badge(i.currency):''}${i.type==='etf'?badge('ETF','g'):''}${i.sector?`<span class="sm2">${esc(i.sector)}</span>`:''}${i.same_symbol_on&&i.same_symbol_on.length?badge('same ticker on '+i.same_symbol_on.join(', '),'w'):''}`;
+function drawSug(d,err){const ul=$('#msug'),q=$('#mq');if(!ul)return;
+ const open=!!(d||err||M.sugg.length);
+ if(err)ul.innerHTML=`<li class="info">${esc(mktErr(err))}</li>`;
+ else if(d&&!M.sugg.length)ul.innerHTML=`<li class="info">No matches in the indexed instruments${d.loading?' (directories are still loading; try again shortly)':''}.${d.indexed===0?' No instrument directory has loaded yet; see the coverage panel.':''}</li>`;
+ else ul.innerHTML=M.sugg.map((i,n)=>`<li role="option" data-id="${esc(i.id)}" class="${n===M.act?'on':''}">${itemRow(i)}</li>`).join('')+(d&&d.warnings&&d.warnings.length?`<li class="info">${esc(d.warnings[0].provider)}: ${esc(d.warnings[0].message)}</li>`:'');
+ ul.hidden=!open;q.setAttribute('aria-expanded',String(open))}
+async function suggest(){const q=$('#mq').value.trim();M.q=q;if(M.ctl)M.ctl.abort();
+ if(!q){M.sugg=[];return drawSug()}
+ M.ctl=new AbortController();
+ try{const d=await mget('search',{q,market:M.market,exchange:M.exchange,limit:8},M.ctl.signal);M.sugg=d.results;M.act=-1;drawSug(d)}
+ catch(e){if(e.name==='AbortError')return;M.sugg=[];drawSug(null,e)}}
+async function fullSearch(){const q=$('#mq').value.trim();M.sugg=[];drawSug();if(!q)return;if(M.ctl)M.ctl.abort();M.ctl=new AbortController();
+ M.res={q,loading:true};drawResults();
+ try{M.res={q,...await mget('search',{q,market:M.market,exchange:M.exchange,limit:30},M.ctl.signal)}}
+ catch(e){if(e.name==='AbortError')return;M.res={q,err:e}}drawResults()}
+function drawResults(){const el=$('#mres');if(!el)return;const r=M.res;if(!r){el.innerHTML='';return}
+ if(r.loading){el.innerHTML='<p class="sm2">Searching…</p>';return}
+ if(r.err){el.innerHTML=emptyState('market','Search failed',esc(mktErr(r.err)));return}
+ const w=(r.warnings||[]).map(x=>`<p class="warnb">${esc(x.provider)}: ${esc(x.message)}</p>`).join('');
+ el.innerHTML=(r.results.length?`<div class="card tw" style="padding:6px;margin-bottom:16px"><table><thead><tr><th>Company</th><th>Ticker</th><th>Exchange</th><th>Currency</th><th>Sector / industry</th><th></th></tr></thead><tbody>${r.results.map(i=>`<tr><td><button class="rr" data-open="${esc(i.id)}">${esc(i.name)}</button>${i.type==='etf'?' '+badge('ETF','g'):''}${i.also_listed&&i.also_listed.length?`<div class="sm2">Also listed: ${esc(i.also_listed.join(', '))}</div>`:''}</td><td><b>${esc(i.symbol)}</b>${i.same_symbol_on&&i.same_symbol_on.length?`<div class="sm2">same ticker on ${esc(i.same_symbol_on.join(', '))}</div>`:''}</td><td>${esc(i.exchange)}</td><td>${esc(i.currency||'—')}</td><td>${esc([i.sector,i.industry].filter(Boolean).join(' / ')||'—')}</td><td style="white-space:nowrap"><button class="btn sec sm" data-wladd="${esc(reg(i)||'')}">+ Watch</button> <button class="btn sec sm" data-cmpadd="${esc(i.id)}">+ Compare</button></td></tr>`).join('')}</tbody></table></div>`
+ :emptyState('market','No matching instruments',`Nothing matched “${esc(r.q)}” in the indexed directories${r.loading?' (still loading)':''} or live search. Coverage is limited to what the configured providers supply; see the coverage panel below.`))+w}
+function pick(id){const i=M.sugg.find(x=>x.id===id);if(i)$('#mq').value=i.name;M.sugg=[];drawSug();openStock(id,M.range)}
+// ==CHARTLOGIC==
+// CHART MATHS: tick selection, gap-aware line paths, hover-to-index mapping and number formatting used by the stock chart.
+const nz=v=>v!=null&&typeof v!=='string'&&isFinite(v);
+const fmtN=(v,d=2)=>nz(v)?Number(v).toLocaleString('en-US',{maximumFractionDigits:d,minimumFractionDigits:d}):'—';
+const fmtCompact=v=>!nz(v)?'—':Math.abs(v)>=1e9?fmtN(v/1e9)+'B':Math.abs(v)>=1e6?fmtN(v/1e6)+'M':Math.abs(v)>=1e3?fmtN(v/1e3)+'K':fmtN(v,0);
+function bigNum(v,cur){if(!nz(v))return '—';
+ if(cur==='INR')return v>=1e12?'₹'+fmtN(v/1e12)+' lakh crore':v>=1e7?'₹'+Math.round(v/1e7).toLocaleString('en-IN')+' crore':'₹'+Math.round(v).toLocaleString('en-IN');
+ const s=cur==='USD'?'$':'';return s+fmtCompact(v)+(!s&&cur?' '+cur:'')}
+function niceTicks(mn,mx,n){const span=(mx-mn)||1,raw=span/n,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p,st=(f<=1.5?1:f<=3?2:f<=7?5:10)*p,o=[];for(let v=Math.ceil(mn/st)*st;v<=mx+st*1e-9;v+=st)o.push(+v.toFixed(10));return o}
+function pathOf(vals,x,y){let d='',pen=false;vals.forEach((v,i)=>{if(!nz(v)){pen=false;return}d+=(pen?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1);pen=true});return d}
+function idxAt(px,left,width,n){if(n<2||!(width>0))return 0;return Math.max(0,Math.min(n-1,Math.round((px-left)/width*(n-1))))}
+// PANELS: describes which sub-charts each view shows (price+volume+RSI, returns, or risk).
+function panels(S,view,ov){
+ if(view==='returns')return[{key:'cum_return',kind:'line',h:190,zero:true,label:'Cumulative return %'},{key:'daily_return',kind:'bars',h:90,zero:true,signed:true,label:'Daily return %'}];
+ if(view==='risk')return[{key:'rolling_vol',kind:'line',h:150,label:'20-day rolling volatility (annualised) %'},{key:'drawdown',kind:'area',h:130,zero:true,color:'neg',label:'Drawdown %'}];
+ const p=[{key:'close',kind:'line',h:240,area:true,label:'Close',overlays:[ov[20]&&'sma20',ov[50]&&'sma50',ov[200]&&'sma200'].filter(Boolean)}];
+ if(ov.vol&&S.volume.some(nz))p.push({key:'volume',kind:'bars',h:60,label:'Volume'});
+ if(ov.rsi)p.push({key:'rsi',kind:'line',h:80,label:'RSI (14)',lines:[30,70],fixed:[0,100]});
+ return p}
+// TOOLTIP ROWS: the labelled values shown when hovering a date.
+function tipRows(S,i,view,ov,cur){const r=[['Date',S.dates[i]]],pc=v=>nz(v)?fmtN(v)+'%':'—';
+ if(view==='returns')r.push(['Cumulative',pc(S.cum_return[i])],['Daily',pc(S.daily_return[i])]);
+ else if(view==='risk')r.push(['20d volatility',pc(S.rolling_vol[i])],['Drawdown',pc(S.drawdown[i])]);
+ else{r.push(['Close',px(S.close[i],cur)]);[[20,'sma20'],[50,'sma50'],[200,'sma200']].forEach(([n,k])=>{if(ov[n])r.push(['SMA '+n,nz(S[k][i])?px(S[k][i],cur):'—'])});
+  if(ov.vol&&S.volume.some(nz))r.push(['Volume',nz(S.volume[i])?fmtCompact(S.volume[i]):'—']);if(ov.rsi)r.push(['RSI',nz(S.rsi[i])?fmtN(S.rsi[i],1):'—'])}
+ return r}
+// CHART DRAWING: builds one responsive SVG with stacked panels, axes, gridlines, moving-average overlays and a hover layer.
+function chartSvg(S,view,ov,W,up){
+ const n=S.dates.length;if(n<2)return null;
+ const L=58,R=10,T=6,GAP=24,AX=20,pw=W-L-R,x=i=>L+pw*i/(n-1),col=up?'var(--g)':'var(--red)',OC={sma20:'#F59E0B',sma50:'#3B82F6',sma200:'#8B5CF6'};
+ let top=T,o='';
+ panels(S,view,ov).forEach(p=>{
+  const vals=[].concat(S[p.key],...(p.overlays||[]).map(k=>S[k])).filter(nz);if(!vals.length)return;
+  let mn=Math.min(...vals),mx=Math.max(...vals);
+  if(p.zero){mn=Math.min(mn,0);mx=Math.max(mx,0)}if(p.key==='volume')mn=0;if(p.fixed){mn=p.fixed[0];mx=p.fixed[1]}if(mn===mx){mn-=1;mx+=1}
+  if(!p.fixed&&p.key!=='volume'){const pad=(mx-mn)*.06;if(!(p.zero&&mn===0))mn-=pad;if(!(p.zero&&mx===0))mx+=pad}
+  const y=v=>top+p.h-(v-mn)/(mx-mn)*p.h;
+  niceTicks(mn,mx,p.h>150?5:3).forEach(t=>{const yy=y(t);o+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/><text class="ct" x="${L-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end">${p.key==='volume'?fmtCompact(t):fmtN(t,mx-mn<10?2:mx-mn<100?1:0)}</text>`});
+  (p.lines||[]).forEach(t=>{o+=`<line style="stroke:var(--tx2);stroke-width:1;stroke-dasharray:4 3" x1="${L}" x2="${W-R}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/>`});
+  if(p.zero)o+=`<line style="stroke:var(--tx2);stroke-width:1" x1="${L}" x2="${W-R}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`;
+  const a=S[p.key];
+  if(p.kind==='bars'){const bw=Math.max(1,Math.min(14,pw/n*.7));a.forEach((v,i)=>{if(!nz(v))return;const y0=y(p.zero?0:mn),y1=y(v);o+=`<rect data-k="${p.key}" x="${(x(i)-bw/2).toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(.5,Math.abs(y1-y0)).toFixed(1)}" style="fill:${p.signed?(v>=0?'var(--g)':'var(--red)'):'var(--tx2)'};opacity:${p.signed?.85:.35}"/>`})}
+  else{const d=pathOf(a,x,y),lc=p.color==='neg'?'var(--red)':(p.key==='close'||p.key==='cum_return')?col:'var(--g)';
+   if(p.area||p.kind==='area'){const f=a.findIndex(nz),l=a.length-1-[].concat(a).reverse().findIndex(nz),b=y(p.zero?0:mn);o+=`<path data-k="${p.key}-area" d="${d} L${x(l).toFixed(1)} ${b.toFixed(1)} L${x(f).toFixed(1)} ${b.toFixed(1)}Z" style="fill:${lc};opacity:.12;stroke:none"/>`}
+   o+=`<path data-k="${p.key}" d="${d}" style="fill:none;stroke:${lc};stroke-width:1.8"/>`;
+   (p.overlays||[]).forEach(k=>{o+=`<path data-k="${k}" d="${pathOf(S[k],x,y)}" style="fill:none;stroke:${OC[k]};stroke-width:1.4"/>`})}
+  o+=`<text class="ct" x="${L+4}" y="${top+11}" style="font-weight:600">${p.label}</text>`+(p.overlays||[]).map((k,j)=>`<text class="ct" x="${W-R-4-j*58}" y="${top+11}" text-anchor="end" style="fill:${OC[k]};font-weight:600">${k.toUpperCase().replace('SMA','SMA ')}</text>`).join('');
+  top+=p.h+GAP});
+ if(!o)return null;const H=top-GAP+AX;
+ [...new Set([0,1,2,3,4].map(k=>Math.round(k*(n-1)/4)))].forEach((i,k,arr)=>{o+=`<text class="ct" x="${x(i).toFixed(1)}" y="${H-4}" text-anchor="${k===0?'start':k===arr.length-1?'end':'middle'}">${S.dates[i].slice(0,n>260?7:10).slice(n>260?0:5)}</text>`});
+ return{svg:`<svg class="chartsvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Interactive chart from ${S.dates[0]} to ${S.dates[n-1]}">${o}<line id="chx" class="cx" x1="0" x2="0" y1="${T}" y2="${H-AX}" style="visibility:hidden"/><rect id="chov" x="${L}" y="0" width="${pw}" height="${H}" style="fill:transparent"/></svg>`,H,x,n,L,pw}}
+// ==/CHARTLOGIC==
+
+// STOCK DASHBOARD: loads one instrument's analysis, then draws price block, controls, chart, metric cards and fundamentals.
+const RANGES_UI=[['1mo','1M'],['3mo','3M'],['6mo','6M'],['1y','1Y'],['5y','5Y'],['max','Max']];
+const pct=v=>v==null?'—':`<span class="${v<0?'neg':'pos'}">${v>0?'+':''}${fmtN(v)}%</span>`;
+const kv=(l,v,sub)=>`<div class="kv"><span>${l}${sub?`<div class="sm2">${sub}</div>`:''}</span><b style="text-align:right">${v}</b></div>`;
+async function openStock(id,range){const req=++M.req;M.selId=id;M.range=range||M.range;M.sel={loading:true};drawDetail();
+ if(M.fundId!==id){M.fundId=id;M.fund={loading:true};mget('fundamentals',{id}).then(d=>{if(M.fundId===id){M.fund=d;drawFund()}}).catch(e=>{if(M.fundId===id){M.fund={err:e};drawFund()}})}
+ try{const d=await mget('analysis',{id,range:M.range});if(req!==M.req)return;M.sel=d}catch(e){if(req!==M.req||e.name==='AbortError')return;M.sel={err:e}}
+ drawDetail();const el=$('#mdet');if(el)el.scrollIntoView({block:'nearest',behavior:'smooth'})}
+function drawDetail(){const el=$('#mdet');if(!el)return;const d=M.sel;if(!d){el.innerHTML='';return}
+ if(d.loading){el.innerHTML='<div class="card" style="margin-bottom:16px"><span class="load">Loading price history and calculating metrics…</span></div>';return}
+ if(d.err){el.innerHTML=`<div class="card" style="margin-bottom:16px"><b>Couldn’t load this stock</b><p class="empty-s" style="padding:6px 0">${esc(mktErr(d.err))}</p>${d.err.candidates?d.err.candidates.map(c=>`<button class="btn sec sm" data-open="${esc(c.id)}">${esc(c.id)}</button> `).join(''):''}<button class="btn sec sm" data-open="${esc(M.selId)}">Retry</button></div>`;return}
+ const i=d.instrument,c=d.currency,p=d.price,r=d.risk,md=r.max_drawdown,ind=d.indicators,v=d.volume,hl=d.range_high_low,w=d.w52_high_low,hh=d.history_high_low,ov=M.ov;
+ const note=[[20,'sma20'],[50,'sma50'],[200,'sma200']].filter(([n,k])=>ov[n]&&M.view==='price'&&ind[k].value==null).map(([n,k])=>`SMA ${n}: ${esc(ind[k].reason)}`).concat(M.view==='price'&&ov.rsi&&ind.rsi14.value==null?['RSI: '+esc(ind.rsi14.reason)]:[],M.view==='price'&&ov.vol&&!v.available?['Volume: '+esc(v.reason)]:[]);
+ el.innerHTML=`<div class="card" style="margin-bottom:16px"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><h3 style="margin:0;font-size:20px">${esc(i.name)}</h3><span class="tkr">${esc(i.symbol)}</span>${badge(i.exchange)}${c?badge(c):''}${i.type==='etf'?badge('ETF','g'):''}</div>
+ <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">${badge(d.data_type_label,d.data_type==='delayed'?'':'g')}${badge('Not live: end-of-day data','w')}${badge('Source: '+d.source.provider)}${badge('Latest observation '+d.latest_observation)}${d.cached?badge('cached'):''}</div>
+ ${(d.warnings||[]).map(x=>`<div class="warnb">${esc(x)}</div>`).join('')}
+ <div class="stats" style="margin:12px 0"><div><small class="sm2">Latest price (${esc(p.latest_date)})</small><div class="res" style="font-size:24px;color:var(--tx)">${px(p.latest,c)}</div></div>
+ <div><small class="sm2">Previous close${p.previous_date?' ('+esc(p.previous_date)+')':''}</small><div class="res" style="font-size:24px;color:var(--tx)">${px(p.previous_close,c)}</div></div>
+ <div><small class="sm2">Day change</small><div class="res ${p.change<0?'neg':'pos'}" style="font-size:24px">${p.change==null?'—':(p.change>0?'+':'')+px(p.change,c)}</div><div>${pct(p.change_pct)}</div></div>
+ <div><small class="sm2">Return over ${esc(d.range)} (since ${esc(d.window_start)})</small><div class="res ${d.range_return_pct<0?'neg':'pos'}" style="font-size:24px">${d.range_return_pct==null?'—':(d.range_return_pct>0?'+':'')+fmtN(d.range_return_pct)+'%'}</div></div></div>
+ <div class="ctl"><div class="seg" role="group" aria-label="Range">${RANGES_UI.map(([k,l])=>`<button data-rng="${k}" class="${d.range===k?'on':''}">${l}</button>`).join('')}</div>
+ <div class="seg" role="group" aria-label="Chart view">${[['price','Price'],['returns','Returns'],['risk','Risk']].map(([k,l])=>`<button data-view="${k}" class="${M.view===k?'on':''}">${l}</button>`).join('')}</div>
+ ${M.view==='price'?`<div style="display:flex;gap:6px;flex-wrap:wrap">${[[20,'SMA 20'],[50,'SMA 50'],[200,'SMA 200'],['vol','Volume'],['rsi','RSI']].map(([k,l])=>`<button class="tgl" data-ov="${k}" aria-pressed="${!!ov[k]}">${l}</button>`).join('')}</div>`:''}</div>
+ <div class="chartwrap" id="mchart"></div>${note.length?`<p class="sm2">${note.join(' · ')}</p>`:''}
+ <div class="g3"><div class="card"><b>Performance</b><div style="margin-top:6px">${d.performance.map(x=>kv(x.period,x.return_pct==null?'—':pct(x.return_pct),x.return_pct==null?esc(x.reason):'since '+esc(x.from_date))).join('')}</div><p class="sm2" style="margin:8px 0 0">Based on ${esc(d.return_basis)}.</p></div>
+ <div class="card"><b>Highs and lows</b><div style="margin-top:6px">${kv('Range high',px(hl.high,c),esc(hl.high_date))}${kv('Range low',px(hl.low,c),esc(hl.low_date))}${kv('52-week high',px(w.high,c),esc(w.high_date))}${kv('52-week low',px(w.low,c),esc(w.low_date))}${kv('Highest in history',px(hh.high,c),'retrieved history since '+esc(d.history_start)+', '+esc(hh.high_date))}${kv('Lowest in history',px(hh.low,c),esc(hh.low_date))}</div></div>
+ <div class="card"><b>Risk (${esc(d.range)} window)</b><div style="margin-top:6px">${kv('Daily volatility',r.daily_vol_pct==null?'—':fmtN(r.daily_vol_pct)+'%')}${kv('Annualised volatility',r.annualised_vol_pct==null?'—':fmtN(r.annualised_vol_pct)+'%','daily × √252, from '+r.return_observations+' returns')}${kv('Maximum drawdown',md?`<span class="neg">${fmtN(md.pct)}%</span>`:'—',md?`peak ${esc(md.peak_date)} → trough ${esc(md.trough_date)}; ${md.pct===0?'no decline':md.recovery_date?'recovered '+esc(md.recovery_date):'not yet recovered'}`:'')}${kv('Current drawdown',pct(r.current_drawdown_pct),'from the window’s peak')}</div>${r.reason?`<p class="sm2" style="margin:8px 0 0">${esc(r.reason)}</p>`:''}</div>
+ <div class="card"><b>Technical indicators</b><div style="margin-top:6px">${[['sma20','SMA 20'],['sma50','SMA 50'],['sma200','SMA 200']].map(([k,l])=>kv(l,ind[k].value==null?'—':px(ind[k].value,c),ind[k].value==null?esc(ind[k].reason):'price is '+ind[k].price_vs+' it')).join('')}${kv('RSI (14)',ind.rsi14.value==null?'—':fmtN(ind.rsi14.value,1),ind.rsi14.value==null?esc(ind.rsi14.reason):esc(ind.rsi14.zone))}</div><p class="sm2" style="margin:8px 0 0">Indicators use the full retrieved history, not just the selected range, and are descriptive, not advice.</p></div>
+ <div class="card"><b>Volume</b><div style="margin-top:6px">${v.available?kv('Latest volume',fmtCompact(v.latest))+kv('20-day average',v.avg20==null?'—':fmtCompact(v.avg20)):`<p class="sm2" style="margin:0">${esc(v.reason)}</p>`}</div></div>
+ <div class="card"><b>Fundamentals</b><div id="mfund" style="margin-top:6px"></div></div></div>
+ <p class="sm2" style="margin:12px 0 0">Source: ${esc(d.source.provider)} · ${esc(d.source.note||'')} · history from ${esc(d.history_start)} (${d.observations_total.toLocaleString('en-IN')} observations) · retrieved ${esc(d.retrieved_at.slice(0,16).replace('T',' '))} UTC. Prices are not live. Calculations are deterministic and use only retrieved data.</p>
+ <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-ask="1">Ask FinBot about this stock</button><button class="btn sec" data-wladd="${esc(reg(Object.assign({currency:c},i))||'')}">+ Add to watchlist</button><button class="btn sec" data-cmpgo="${esc(i.id)}">Compare with…</button></div></div>`;
+ drawChart();drawFund()}
+function drawChart(){const el=$('#mchart');if(!el||!M.sel||!M.sel.series)return;const W=Math.max(300,Math.floor(el.clientWidth||720)),g=chartSvg(M.sel.series,M.view,M.ov,W,(M.sel.range_return_pct||0)>=0);
+ if(!g){el.innerHTML='<div class="empty" style="padding:24px">Not enough observations to draw a chart for this range.</div>';return}
+ g.W=W;el.innerHTML=g.svg+'<div class="tip" id="mtip" hidden></div>';bindChart(g)}
+function bindChart(g){const ov=$('#chov'),cx=$('#chx'),tip=$('#mtip');if(!ov||!cx||!tip)return;
+ const move=e=>{const r=ov.getBoundingClientRect(),i=idxAt(e.clientX,r.left,r.width,g.n),X=g.x(i);cx.setAttribute('x1',X);cx.setAttribute('x2',X);cx.style.visibility='visible';
+  tip.innerHTML=tipRows(M.sel.series,i,M.view,M.ov,M.sel.currency).map(([k,v])=>`<div class="kv" style="padding:2px 0;border:0"><span>${k}</span><b>${esc(v)}</b></div>`).join('');tip.hidden=false;const w=tip.offsetWidth||160;tip.style.left=Math.max(0,Math.min(X+14,g.W-w-4))+'px';tip.style.top='6px'};
+ ov.onpointermove=move;ov.onpointerdown=move;ov.onpointerleave=()=>{cx.style.visibility='hidden';tip.hidden=true}}
+function drawFund(){const el=$('#mfund');if(!el)return;const f=M.fund;
+ if(!f||f.loading){el.innerHTML='<span class="load">Loading fundamentals…</span>';return}
+ if(f.err){el.innerHTML=`<p class="sm2" style="margin:0">${esc(mktErr(f.err))}</p>`;return}
+ const m=f.metrics||{},na='<span class="sm2">Not available</span>',cur=m.eps_ttm&&m.eps_ttm.currency;
+ el.innerHTML=kv('Market capitalisation',m.market_cap?bigNum(m.market_cap.value,m.market_cap.currency):na)+kv('P/E ratio (TTM)',m.pe_ttm?fmtN(m.pe_ttm.value,1):na)+kv('EPS (TTM)',m.eps_ttm?px(m.eps_ttm.value,cur):na)+kv('Dividend yield',m.dividend_yield_pct?fmtN(m.dividend_yield_pct.value)+'%':na)+kv('Sector',f.sector?esc(f.sector):na)+kv('Industry',f.industry?esc(f.industry):na)
+  +(f.available?`<p class="sm2" style="margin:8px 0 0">Source: ${esc(f.provider)} (TTM = trailing twelve months). Missing items were not supplied by the provider.</p>`:`<p class="note" style="margin:8px 0 0">${esc(f.reason||'Fundamentals are not available.')}</p>`)
+  +(f.sector_source&&(f.sector||f.industry)&&f.sector_source!==f.provider?`<p class="sm2" style="margin:4px 0 0">Sector/industry from ${esc(f.sector_source)}.</p>`:'')}
+if(window.addEventListener)window.addEventListener('resize',()=>{clearTimeout(M.rt);M.rt=setTimeout(()=>{if(S.page==='market')drawChart()},150)});
+function drawStatus(){const s=M.status,a=$('#mstat'),b=$('#mcov');if(!a||!b)return;
+ a.innerHTML=M.err?`<div class="note" style="border:1px solid var(--red)"><b>Market data unavailable.</b> ${esc(mktErr(M.err))}</div>`:(s&&s.loading?'<div class="note">Instrument directories are still loading; search results may be incomplete for a moment.</div>':'');
+ if(!s){b.innerHTML='';return}
+ b.innerHTML=`<details class="card cov" open><summary>Data coverage and limitations</summary><div class="tw"><table style="margin-top:10px"><thead><tr><th>Provider</th><th>Role</th><th>Status</th><th>Notes</th></tr></thead><tbody>${s.providers.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(p.role)}</td><td>${esc(p.state==='ok'?'OK · '+p.count.toLocaleString('en-IN')+' instruments'+(p.source==='cache'?' (cached)':''):p.state||(p.configured?'configured':'not configured'))}${p.message?`<div class="sm2">${esc(p.message)}</div>`:''}</td><td class="sm2">${esc(p.note||'')}</td></tr>`).join('')}</tbody></table></div>
+ <p class="sm2" style="margin:10px 0 4px"><b>Price routing:</b> ${s.routes?Object.entries(s.routes).map(([m,l])=>esc(m==='*'?'Other markets':m)+' → '+l.map(esc).join(' → ')).join('; '):'—'}.</p><p class="sm2" style="margin:10px 0 4px"><b>Indexed:</b> ${s.indexed.toLocaleString('en-IN')} instruments${s.exchanges.length?' — '+s.exchanges.map(e=>esc(e.code)+' '+e.count.toLocaleString('en-IN')).join(', '):''}.</p>
+ <ul class="sm2" style="margin:0;padding-left:18px">${s.limits.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
+ <p class="sm2" style="margin:8px 0 0">Better coverage: set <code>ALPHAVANTAGE_API_KEY</code>, point <code>BSE_SCRIP_FILE</code> to a BSE scrip list, or add a licensed provider class in <code>market/providers.py</code> and list it in <code>FINBOT_DIRECTORIES</code>, <code>FINBOT_SEARCH</code> or <code>FINBOT_HISTORY</code>.</p></details>`}
+function fillExchanges(){const sel=$('#mex');if(!sel)return;const ex=(M.status?M.status.exchanges:[]).filter(e=>M.market==='all'||(M.market==='Other'?!['India','United States'].includes(e.market):e.market===M.market));
+ if(!ex.some(e=>e.code===M.exchange))M.exchange='all';
+ sel.innerHTML='<option value="all">All exchanges</option>'+ex.map(e=>`<option value="${esc(e.code)}" ${e.code===M.exchange?'selected':''}>${esc(e.code)} (${e.count.toLocaleString('en-IN')})</option>`).join('')}
+async function loadStatus(){clearTimeout(M.tm);
+ try{M.status=await mget('status',{});M.err=null}catch(e){if(e.name==='AbortError')return;M.err=e}
+ if(S.page!=='market')return;drawStatus();fillExchanges();if(M.status&&M.status.loading)M.tm=setTimeout(loadStatus,3000)}
+function bindMarket(){clearTimeout(M.tm);const q=$('#mq'),mk=$('#mmk'),ex=$('#mex');let deb;
+ mk.value=M.market;q.value=M.q;fillExchanges();drawStatus();drawResults();drawDetail();loadStatus();
+ mk.onchange=()=>{M.market=mk.value;fillExchanges();if(q.value.trim())suggest()};
+ ex.onchange=()=>{M.exchange=ex.value;if(q.value.trim())suggest()};
+ q.oninput=()=>{clearTimeout(deb);deb=setTimeout(suggest,200)};
+ q.onkeydown=e=>{const n=M.sugg.length;
+  if(e.key==='ArrowDown'&&n){e.preventDefault();M.act=(M.act+1)%n;drawSug({})}
+  else if(e.key==='ArrowUp'&&n){e.preventDefault();M.act=(M.act-1+n)%n;drawSug({})}
+  else if(e.key==='Enter'){e.preventDefault();clearTimeout(deb);M.act>=0&&M.sugg[M.act]?pick(M.sugg[M.act].id):fullSearch()}
+  else if(e.key==='Escape'){M.sugg=[];drawSug()}};
+ $('#msb').onclick=fullSearch;
+ $('#msug').onmousedown=e=>{const li=e.target.closest('li[data-id]');if(li){e.preventDefault();pick(li.dataset.id)}};
+ if(M.pending){const id=M.pending;M.pending=null;openStock(id,M.range)}}
+document.addEventListener('click',e=>{
+ if(!e.target.closest('.ac')&&S.page==='market'&&M.sugg.length){M.sugg=[];drawSug()}
+ const t=e.target.closest('[data-open],[data-rng],[data-ask],[data-view],[data-ov]');if(!t)return;
+ if(t.dataset.open!==undefined)openStock(t.dataset.open,M.range);
+ else if(t.dataset.rng)openStock(M.selId,t.dataset.rng);
+ else if(t.dataset.view){M.view=t.dataset.view;drawDetail()}
+ else if(t.dataset.ov){const k=t.dataset.ov;M.ov[k]=!M.ov[k];drawDetail()}
+ else if(t.dataset.ask&&M.sel&&M.sel.instrument){const i=M.sel.instrument;send(`Using market data, summarise ${i.name} (${i.id}) over ${M.sel.range}: latest price, price change and what the data does and does not tell us.`)}});
+
+
+// ==SCRLOGIC==
+// SCREENER STATE: the filter values, sort, page and results; kept so the page survives navigation.
+const Z={f:{market:'all',exchanges:[],sector:'',industry:'',name_contains:'',price_min:'',price_max:'',change_min:'',change_max:'',perf_period:'1M',perf_min:'',perf_max:'',avgvol_min:'',vol_min:'',vol_max:'',mdd_min:'',mcap_min:'',mcap_max:'',pe_min:'',pe_max:'',sma_period:'',sma_side:'above'},
+ sort:'perf_1m',dir:'desc',page:1,size:25,res:null,err:null,status:null,serr:null,nl:null,nlText:'',busy:false,req:0,token:'',needToken:false,enrich:null,poll:null,scanErr:null,wasRunning:false};
+// QUERY BUILDER: turns the filter controls into the URL parameters the server expects, leaving out anything left blank.
+function zQuery(Z,extra){const f=Z.f,q={};
+ for(const [k,v] of Object.entries(f)){if(k==='exchanges'){if(v.length)q.exchanges=v.join(',')}else if(['sma_period','sma_side','perf_period'].includes(k)){}else if(v!==''&&v!=null&&!(k==='market'&&v==='all'))q[k]=v}
+ if(f.sma_period){q.sma_period=f.sma_period;q.sma_side=f.sma_side}
+ if(f.perf_min!==''||f.perf_max!=='')q.perf_period=f.perf_period;
+ q.sort=Z.sort;q.dir=Z.dir;q.page=Z.page;q.page_size=Z.size;return Object.assign(q,extra||{})}
+// POST CALL: like mget but for actions (start scan, cancel, load fundamentals); sends the admin token only if one was typed.
+async function mpost(path,body,token){const base=S.backendUrl.replace(/\/chat$/,'')+'/market/';let r;
+ try{r=await fetch(base+path,{method:'POST',headers:Object.assign({'Content-Type':'application/json'},token?{'X-Admin-Token':token}:{}),body:JSON.stringify(body||{})})}
+ catch(e){throw{code:'backend_unreachable',message:'Cannot reach the backend ('+base+'). Run python app.py.'}}
+ let d;try{d=await r.json()}catch(e){throw{code:'bad_response',message:'This server did not return screener data. Run the Python backend (python app.py).'}}
+ if(!r.ok)throw d.error||{code:'http',message:'The server returned HTTP '+r.status+'.'};return d}
+// TABLE: column list and one result row; percentages are green when positive and red when negative.
+const ZCOLS=[['name','Company'],['symbol','Ticker'],['exchange','Exchange'],['price','Price'],['chg','Day %'],['perf_1m','1M %'],['perf_3m','3M %'],['perf_6m','6M %'],['perf_1y','1Y %'],['vol','Volatility %'],['mdd','Max drawdown %'],['avgvol','Avg volume'],['mcap','Market cap'],['pe','P/E']];
+const zpct=v=>v==null?'—':`<span class="${v<0?'neg':'pos'}">${v>0?'+':''}${fmtN(v)}%</span>`;
+const zRow=r=>`<tr><td><button class="rr" data-zopen="${esc(r.id)}">${esc(r.name)}</button>${r.type==='etf'?' '+badge('ETF','g'):''}</td><td><b>${esc(r.symbol)}</b></td><td>${esc(r.exchange)}</td><td>${px(r.price,r.currency)}<div class="sm2">${esc(r.date)}</div></td><td>${zpct(r.chg)}</td><td>${zpct(r.perf_1m)}</td><td>${zpct(r.perf_3m)}</td><td>${zpct(r.perf_6m)}</td><td>${zpct(r.perf_1y)}</td><td>${r.vol==null?'—':fmtN(r.vol)+'%'}</td><td>${r.mdd==null?'—':`<span class="${r.mdd<0?'neg':''}">${fmtN(r.mdd)}%</span>`}</td><td>${fmtCompact(r.avgvol)}</td><td>${r.mcap==null?'—':bigNum(r.mcap,r.currency)}</td><td>${r.pe==null?'—':fmtN(r.pe,1)}</td><td style="white-space:nowrap"><button class="btn sec sm" data-wladd="${esc(reg(r)||'')}">+ Watch</button> <button class="btn sec sm" data-cmpadd="${esc(r.id)}">+ Compare</button></td></tr>`;
+// CHAT REPLY: formats a plain-English screening result (from the backend) as a markdown answer with its coverage statement.
+function screenReply(d){const r=d.result,rows=r.rows||[];
+ const head=(d.understood&&d.understood.length?'**How I read your question:** '+d.understood.join('; ')+'.\n\n':'')+(d.notes&&d.notes.length?d.notes.map(n=>'*'+n+'*').join('\n')+'\n\n':'');
+ if(!r.scan.exchanges.length)return head+'**No exchange has been scanned yet.** Open **Stock Screener** and press Scan for an exchange first; I only report results from an actual scan.';
+ const c=v=>v==null?'—':fmtN(v)+'%',nm=x=>String(x).replace(/\|/g,'/');
+ const t=rows.length?'| Company | Ticker | Exch. | Price | Day | 1M | 6M | 1Y | Volatility |\n|---|---|---|---|---|---|---|---|---|\n'+rows.map(x=>`| ${nm(x.name)} | ${nm(x.symbol)} | ${x.exchange} | ${px(x.price,x.currency)} | ${c(x.chg)} | ${c(x.perf_1m)} | ${c(x.perf_6m)} | ${c(x.perf_1y)} | ${c(x.vol)} |`).join('\n'):'**No stocks matched these filters.**';
+ return head+`**${r.total.toLocaleString('en-IN')} matches**`+(r.filters_applied.length?' ('+r.filters_applied.join('; ')+')':'')+`, showing ${rows.length}, sorted by ${r.sort} (${r.dir}).\n\n`+t+`\n\n**Coverage:** ${r.scan.statement}\n\n*End-of-day data from the last scan, not live; percentages are price returns. Open the Stock Screener page to filter further, sort and export.*`}
+// ==/SCRLOGIC==
+
+// SCREENER PAGE: scan panel, plain-English box, filter controls and the results area; the functions below fill them in.
+function screenerPage(){return `<div class="wrap">${head('Stock Screener','Filter and rank stocks across the exchanges you have scanned. Results come from a stored end-of-day scan, not live prices.','Stage 5')}
+<div id="zscan" style="margin-bottom:16px"></div>
+<div class="card" style="margin-bottom:16px"><label for="znl">Ask in plain English</label><div class="mrow"><input class="f" id="znl" style="flex:1;min-width:220px" placeholder="e.g. Find Indian stocks trading above their 200-day moving average" value="${esc(Z.nlText)}"><button class="btn" data-znl="1">Search</button></div><div id="znote"></div></div>
+<div class="card" style="margin-bottom:16px" id="zform"></div><div id="zres"></div></div>`}
+const zfld=(k,l,ph,type)=>`<div><label>${l}</label><input class="f" data-zf="${k}" type="${type||'number'}" step="any" placeholder="${ph||''}" value="${esc(Z.f[k])}"></div>`;
+function drawZForm(){const el=$('#zform');if(!el)return;const ex=(Z.status?Z.status.exchanges:[]);
+ el.innerHTML=`<div class="row"><div><label>Market</label><select class="f" data-zf="market">${[['all','All scanned markets'],['India','India'],['United States','United States'],['Other','Other']].map(([v,l])=>`<option value="${v}" ${Z.f.market===v?'selected':''}>${l}</option>`).join('')}</select></div>
+ <div style="flex:2"><label>Exchanges</label><div>${ex.length?ex.map(e=>`<label style="display:inline-flex;gap:4px;margin-right:12px;color:${e.snapshot?'var(--tx)':'var(--tx2)'}"><input type="checkbox" data-zex="${esc(e.exchange)}" ${Z.f.exchanges.includes(e.exchange)?'checked':''} ${e.snapshot?'':'disabled'}> ${esc(e.exchange)}${e.snapshot?'':' (not scanned)'}</label>`).join(''):'<span class="sm2">Exchange list unavailable.</span>'}</div></div></div>
+ <div class="row">${zfld('sector','Sector contains','','text')}${zfld('industry','Industry contains','','text')}${zfld('name_contains','Company name contains','e.g. bank','text')}</div>
+ <div class="row">${zfld('price_min','Price min')}${zfld('price_max','Price max')}${zfld('change_min','Daily change % min')}${zfld('change_max','Daily change % max')}${zfld('avgvol_min','Avg volume (20d) min')}</div>
+ <div class="row"><div><label>Performance period</label><select class="f" data-zf="perf_period">${['1M','3M','6M','1Y'].map(p=>`<option ${Z.f.perf_period===p?'selected':''}>${p}</option>`).join('')}</select></div>${zfld('perf_min','Performance % min')}${zfld('perf_max','Performance % max')}${zfld('vol_min','Volatility % min (annualised)')}${zfld('vol_max','Volatility % max')}${zfld('mdd_min','Max drawdown not worse than %','e.g. -30')}</div>
+ <div class="row">${zfld('mcap_min','Market cap min (millions)')}${zfld('mcap_max','Market cap max (millions)')}${zfld('pe_min','P/E min')}${zfld('pe_max','P/E max')}<div><label>Moving average</label><select class="f" data-zf="sma_period">${[['','Any'],['20','20-day'],['50','50-day'],['200','200-day']].map(([v,l])=>`<option value="${v}" ${String(Z.f.sma_period)===v?'selected':''}>${l}</option>`).join('')}</select></div><div><label>Price is</label><select class="f" data-zf="sma_side"><option value="above" ${Z.f.sma_side==='above'?'selected':''}>above it</option><option value="below" ${Z.f.sma_side==='below'?'selected':''}>below it</option></select></div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-zapply="1">Apply filters</button><button class="btn sec" data-zreset="1">Reset</button></div>
+ <p class="sm2" style="margin:8px 0 0">Market cap and P/E only exist for stocks whose fundamentals have been loaded (button under the results); stocks without a value are left out when those filters are used. Sector/industry data is only available for some instruments.</p>`}
+function drawZScan(){const el=$('#zscan');if(!el)return;const st=Z.status;
+ if(Z.serr){el.innerHTML=`<div class="note" style="border:1px solid var(--red)"><b>Screener unavailable.</b> ${esc(mktErr(Z.serr))}</div>`;return}
+ if(!st){el.innerHTML='<span class="load">Loading scan status…</span>';return}
+ const sc=st.scan||{},run=sc.running;
+ el.innerHTML=`<div class="card"><b>Scanned universe</b><p class="sm2" style="margin:4px 0 10px">A scan fetches about a year of daily prices for every listed equity in an exchange's directory, a few at a time to respect data-provider limits, and stores the metrics. Screening then runs instantly on the stored scan. Large exchanges can take many minutes; a partial scan is always labelled partial.</p>
+ ${run?`<div style="margin-bottom:10px"><progress class="prog" max="${sc.total}" value="${sc.done}"></progress><div class="sm2">Scanning ${esc(sc.exchange)}: ${sc.done.toLocaleString('en-IN')} of ${sc.total.toLocaleString('en-IN')} processed (${sc.ok.toLocaleString('en-IN')} ok, ${sc.failed.toLocaleString('en-IN')} failed)${sc.rate_limit_pauses?` · ${sc.rate_limit_pauses} provider rate-limit pause(s)`:''} · ${esc(sc.message||'')} <button class="btn sec sm" data-zcancel="1">Cancel</button></div></div>`:''}
+ ${Z.scanErr?`<div class="warnb" style="margin-bottom:10px">${esc(mktErr(Z.scanErr))}</div>`:''}
+ ${Z.needToken?`<div class="row"><div><label>Admin token (the server asked for one)</label><input class="f" id="ztoken" type="password" value="${esc(Z.token)}"></div></div>`:''}
+ <div class="tw"><table><thead><tr><th>Exchange</th><th>Eligible equities</th><th>Last scan</th><th></th></tr></thead><tbody>${st.exchanges.map(e=>{const s=e.snapshot;return `<tr><td><b>${esc(e.exchange)}</b></td><td>${e.eligible.toLocaleString('en-IN')}</td><td>${s?`${esc(s.scan_date)} · ${s.ok.toLocaleString('en-IN')} ok, ${s.failed.toLocaleString('en-IN')} failed · ${s.complete?badge('all attempted','g'):badge('partial','w')} <span class="sm2">latest prices ${esc(s.obs_min||'—')} to ${esc(s.obs_max||'—')}</span>`:'<span class="sm2">Not scanned</span>'}</td><td><button class="btn sec sm" data-zscan="${esc(e.exchange)}" ${run?'disabled':''}>${s?'Rescan':'Scan'}</button></td></tr>`}).join('')||'<tr><td colspan="4" class="sm2">No instrument directories loaded yet.'+(st.directories_loading?' They are still loading.':'')+'</td></tr>'}</tbody></table></div>
+ <div class="row" style="margin-top:10px"><div><label for="zlimit">Optional limit (quick partial scan of the first N alphabetically)</label><input class="f" id="zlimit" type="number" min="1" placeholder="blank = whole exchange"></div></div></div>`}
+function drawZResults(){const el=$('#zres');if(!el)return;const r=Z.res;
+ if(Z.busy&&!r){el.innerHTML='<div class="card"><span class="load">Screening…</span></div>';return}
+ if(Z.err){el.innerHTML=emptyState('screen','Screening failed',esc(mktErr(Z.err)));return}
+ if(!r){el.innerHTML=emptyState('screen','No results yet',Z.status&&Z.status.exchanges.some(e=>e.snapshot)?'Press Apply filters, or ask a question above.':'Nothing has been scanned yet. Press Scan on an exchange above; the first scan of a large exchange takes a while.');return}
+ const sc=r.scan,q=zQuery(Z),ex={...q};delete ex.page;delete ex.page_size;
+ const link=S.backendUrl.replace(/\/chat$/,'')+'/market/screener/export?'+new URLSearchParams(ex);
+ const th=ZCOLS.map(([k,l])=>`<th aria-sort="${r.sort===k?(r.dir==='asc'?'ascending':'descending'):'none'}"><button class="sortb" data-zsort="${k}">${l}${r.sort===k?(r.dir==='asc'?' ▲':' ▼'):''}</button></th>`).join('')+'<th></th>';
+ const miss=Object.entries(r.excluded_missing||{});const fails=sc.exchanges.flatMap(e=>(e.failures_sample||[]).map(f=>({...f,ex:e.exchange})));
+ el.innerHTML=`<div class="note" style="${sc.any_partial?'border:1px solid var(--red)':''}"><b>${sc.any_partial?'Partial scan. ':''}Coverage:</b> ${esc(sc.statement)}</div>
+ ${(r.missing_exchanges||[]).length?`<div class="warnb">Not scanned yet, so not included: ${esc(r.missing_exchanges.join(', '))}.</div>`:''}
+ ${r.filters_applied.length?`<p class="sm2" style="margin:8px 0">Filters: ${r.filters_applied.map(f=>`<span class="fchip">${esc(f)}</span>`).join('')}</p>`:''}
+ ${miss.length?`<p class="sm2" style="margin:4px 0">Left out for missing data: ${miss.map(([k,v])=>`${v.toLocaleString('en-IN')} without ${esc(k)}`).join('; ')}.</p>`:''}
+ ${r.total?`<div class="card tw zt" style="padding:6px"><table><thead><tr>${th}</tr></thead><tbody>${r.rows.map(zRow).join('')}</tbody></table></div>
+ <div class="pg"><button class="btn sec sm" data-zpage="prev" ${r.page<=1?'disabled':''}>Previous</button><span class="sm2">Page ${r.page} of ${r.pages} · ${r.total.toLocaleString('en-IN')} matches</span><button class="btn sec sm" data-zpage="next" ${r.page>=r.pages?'disabled':''}>Next</button>
+ <select class="f" id="zsize" style="width:auto" aria-label="Rows per page">${[25,50,100].map(n=>`<option ${r.page_size===n?'selected':''}>${n}</option>`).join('')}</select>
+ <a class="btn sec sm" href="${esc(link)}" download>Export all ${r.total.toLocaleString('en-IN')} as CSV</a><button class="btn sec sm" data-zenrich="1">Load market cap &amp; P/E for this page</button><button class="btn sec sm" data-zcmp="1">Compare top ${Math.min(r.rows.length,6)} on this page</button></div>`:emptyState('screen','No stocks match these filters',`Nothing in the scanned data matched. Try loosening a filter. ${esc(sc.statement)}`)}
+ ${Z.enrich?(Z.enrich.loading?'<p class="load sm2">Loading fundamentals…</p>':`<p class="sm2">Loaded market cap/P/E for ${Z.enrich.loaded} instrument(s). ${Z.enrich.unavailable.length?Z.enrich.unavailable.length+' unavailable (the free Finnhub plan mostly covers US stocks): '+esc(Z.enrich.unavailable.slice(0,3).map(u=>u.id+' ('+u.reason+')').join('; ')):''}</p>`):''}
+ ${fails.length?`<details class="card" style="margin-top:12px"><summary>Instruments that could not be processed (showing ${fails.length})</summary><div class="tw"><table><tbody>${fails.map(f=>`<tr><td>${esc(f.id)}</td><td>${esc(f.name)}</td><td class="sm2">${esc(f.message)}</td></tr>`).join('')}</tbody></table></div></details>`:''}
+ <p class="sm2" style="margin:12px 0 0">Scan period: ${esc(sc.exchanges[0]?sc.exchanges[0].period:'')}. End-of-day data, not live. Performance is price return over the period; volatility is annualised from daily returns; moving averages and drawdown use closing prices. Prices come from ${esc(sc.exchanges[0]?sc.exchanges[0].providers.join(', '):'')}. Click a company for its full analysis.</p>`}
+function drawZNote(){const el=$('#znote');if(!el)return;const n=Z.nl;
+ el.innerHTML=!n?'':`<p class="sm2" style="margin:8px 0 0"><b>How I read it:</b> ${n.understood.length?n.understood.map(esc).join('; ')+'.':'I could not map that to filters; try mentioning an exchange, a period, volatility or a moving average.'}</p>${n.notes.map(x=>`<p class="sm2" style="margin:2px 0 0"><i>${esc(x)}</i></p>`).join('')}`}
+async function runScreen(){const req=++Z.req;Z.busy=true;Z.err=null;drawZResults();
+ try{const d=await mget('screener/search',zQuery(Z));if(req!==Z.req)return;Z.res=d}catch(e){if(req!==Z.req)return;Z.res=null;Z.err=e}
+ Z.busy=false;drawZResults()}
+async function runNL(){const q=(Z.nlText||'').trim();if(!q)return;const req=++Z.req;Z.busy=true;Z.err=null;drawZResults();
+ try{const d=await mget('screener/nl',{q,page_size:Z.size});if(req!==Z.req)return;Z.nl={understood:d.understood,notes:d.notes};const sp=d.spec;
+  Object.keys(Z.f).forEach(k=>{Z.f[k]=k==='exchanges'?(sp.exchanges||[]):(sp[k]==null?(k==='perf_period'?'1M':k==='sma_side'?'above':k==='market'?'all':''):String(sp[k]))});
+  Z.sort=sp.sort||'perf_1m';Z.dir=sp.dir||'desc';Z.page=1;Z.res=d.result}catch(e){if(req!==Z.req)return;Z.res=null;Z.err=e;Z.nl=null}
+ Z.busy=false;drawZForm();drawZNote();drawZResults()}
+function zSort(k){Z.dir=Z.sort===k?(Z.dir==='asc'?'desc':'asc'):(['name','symbol','exchange'].includes(k)?'asc':'desc');Z.sort=k;Z.page=1;runScreen()}
+function zPage(v){const n=Z.res?Z.res.pages:1;Z.page=v==='prev'?Math.max(1,Z.page-1):v==='next'?Math.min(n,Z.page+1):+v;runScreen()}
+function zReset(){Object.assign(Z.f,{market:'all',exchanges:[],sector:'',industry:'',name_contains:'',price_min:'',price_max:'',change_min:'',change_max:'',perf_period:'1M',perf_min:'',perf_max:'',avgvol_min:'',vol_min:'',vol_max:'',mdd_min:'',mcap_min:'',mcap_max:'',pe_min:'',pe_max:'',sma_period:'',sma_side:'above'});Z.sort='perf_1m';Z.dir='desc';Z.page=1;Z.nl=null;drawZForm();drawZNote();runScreen()}
+function zOpen(id){M.pending=id;go('market')}
+async function zScan(ex){const lim=$('#zlimit'),tk=$('#ztoken');if(tk)Z.token=tk.value;Z.scanErr=null;
+ try{await mpost('screener/scan',{exchange:ex,limit:lim&&lim.value?+lim.value:undefined},Z.token);Z.needToken=false;zPoll()}catch(e){Z.scanErr=e;if(e.code==='scan_forbidden')Z.needToken=true;drawZScan()}}
+async function zCancel(){try{await mpost('screener/cancel',{},Z.token)}catch(e){Z.scanErr=e;drawZScan()}}
+async function zEnrich(){if(!Z.res||!Z.res.rows.length)return;Z.enrich={loading:true};drawZResults();
+ try{Z.enrich=await mpost('screener/enrich',{ids:Z.res.rows.map(r=>r.id)},Z.token)}catch(e){Z.enrich=null;Z.scanErr=e;if(e.code==='scan_forbidden')Z.needToken=true;drawZScan()}
+ await runScreen()}
+async function zPoll(first){clearTimeout(Z.poll);
+ try{Z.status=await mget('screener/status',{});Z.serr=null}catch(e){Z.serr=e;Z.status=null}
+ if(S.page!=='screener')return;drawZForm();drawZScan();const run=Z.status&&Z.status.scan&&Z.status.scan.running;
+ if(run){Z.wasRunning=true;Z.poll=setTimeout(zPoll,1500)}
+ else if(Z.wasRunning||(first&&!Z.res&&Z.status&&Z.status.exchanges.some(e=>e.snapshot))){Z.wasRunning=false;runScreen()}
+ else drawZResults()}
+function bindScreener(){clearTimeout(Z.poll);drawZForm();drawZScan();drawZNote();drawZResults();zPoll(true)}
+document.addEventListener('input',e=>{const t=e.target,d=t&&t.dataset;if(!d)return;if(d.zf!==undefined&&d.zf!=='')Z.f[d.zf]=t.value;else if(t.id==='znl')Z.nlText=t.value;else if(t.id==='ztoken')Z.token=t.value});
+document.addEventListener('change',e=>{const t=e.target,d=t&&t.dataset;if(!d)return;if(d.zex!==undefined){const a=Z.f.exchanges,i=a.indexOf(d.zex);t.checked&&i<0?a.push(d.zex):i>=0&&!t.checked&&a.splice(i,1)}else if(t.id==='zsize'){Z.size=+t.value;Z.page=1;runScreen()}else if(d.zf!==undefined&&d.zf!==''){Z.f[d.zf]=t.value}});
+document.addEventListener('keydown',e=>{const t=e.target,d=t&&t.dataset;if(e.key!=='Enter'||!d)return;if(d.zf!==undefined&&d.zf!==''){e.preventDefault();Z.page=1;runScreen()}else if(t.id==='znl'){e.preventDefault();runNL()}});
+document.addEventListener('click',e=>{const t=e.target.closest('[data-zsort],[data-zpage],[data-zscan],[data-zopen],[data-zcancel],[data-zenrich],[data-zapply],[data-zreset],[data-znl]');if(!t)return;const d=t.dataset;
+ if(d.zsort)zSort(d.zsort);else if(d.zpage)zPage(d.zpage);else if(d.zscan)zScan(d.zscan);else if(d.zopen)zOpen(d.zopen);else if(d.zcancel!==undefined)zCancel();else if(d.zenrich!==undefined)zEnrich();else if(d.zapply!==undefined){Z.page=1;runScreen()}else if(d.zreset!==undefined)zReset();else if(d.znl!==undefined)runNL()});
+
+
+// ==WLLOGIC==
+// WATCHLIST MODEL: lists of instruments saved in this browser only (no account), with validation, limits, export and import.
+const WLKEY='wl2',WL_LISTS=20,WL_ITEMS=50,TOASTS={last:''};
+const clip=(v,n)=>String(v==null?'':v).slice(0,n);
+const genId=()=>'l'+Date.now().toString(36)+Math.floor(Math.random()*1e5).toString(36);
+function wlItem(i){if(!i||typeof i!=='object')return null;const id=clip(i.id,70);if(!/^[^:]{1,60}:\S{1,30}$/.test(id))return null;
+ return{id,name:clip(i.name||id,120),symbol:clip(i.symbol||id.split(':')[1],30),exchange:clip(i.exchange||id.split(':')[0],60),currency:i.currency?clip(i.currency,8):null,added:clip(i.added,32)}}
+const wlDefault=()=>({v:2,active:'default',lists:[{id:'default',name:'My watchlist',items:[]}]});
+function wlSanitize(d){if(!d||typeof d!=='object'||!Array.isArray(d.lists))return wlDefault();const seen=new Set(),lists=[];
+ for(const l of d.lists.slice(0,WL_LISTS)){if(!l||typeof l!=='object')continue;let id=clip(l.id,40)||genId();while(seen.has(id))id=genId();seen.add(id);const ids=new Set(),items=[];
+  for(const it of Array.isArray(l.items)?l.items:[]){const c=wlItem(it);if(c&&!ids.has(c.id)&&items.length<WL_ITEMS){ids.add(c.id);items.push(c)}}lists.push({id,name:clip(l.name,40)||'My watchlist',items})}
+ if(!lists.length)return wlDefault();return{v:2,active:lists.some(l=>l.id===d.active)?d.active:lists[0].id,lists}}
+let WL=wlSanitize(store.get(WLKEY,null));
+const wlSave=()=>store.set(WLKEY,WL);
+const wlList=id=>WL.lists.find(l=>l.id===(id||WL.active))||WL.lists[0];
+function wlAdd(item,listId){const l=wlList(listId),it=wlItem(Object.assign({},item,{added:new Date().toISOString().slice(0,10)}));if(!it)return'invalid';if(l.items.some(x=>x.id===it.id))return'exists';if(l.items.length>=WL_ITEMS)return'full';l.items.push(it);wlSave();return'added'}
+function wlRemove(id,listId){const l=wlList(listId);l.items=l.items.filter(x=>x.id!==id);wlSave()}
+function wlNewList(name){name=clip(name,40).trim();if(!name||WL.lists.length>=WL_LISTS)return null;const l={id:genId(),name,items:[]};WL.lists.push(l);WL.active=l.id;wlSave();return l.id}
+function wlRename(id,name){name=clip(name,40).trim();const l=wlList(id);if(name&&l){l.name=name;wlSave()}}
+function wlDelete(id){if(WL.lists.length<2)return false;WL.lists=WL.lists.filter(l=>l.id!==id);if(WL.active===id)WL.active=WL.lists[0].id;wlSave();return true}
+const wlExport=()=>JSON.stringify({app:'FinBot',v:2,exported:new Date().toISOString(),lists:WL.lists},null,1);
+function wlImport(text){let d;try{d=JSON.parse(text)}catch(e){throw new Error('That file is not valid JSON.')}
+ if(!d||d.app!=='FinBot'||!Array.isArray(d.lists))throw new Error('That file is not a FinBot watchlist export.');
+ const clean=wlSanitize({lists:d.lists});let la=0,ia=0,sk=0;
+ for(const l of clean.lists){let t=WL.lists.find(x=>x.name===l.name);if(!t){if(WL.lists.length>=WL_LISTS){sk+=l.items.length;continue}t={id:genId(),name:l.name,items:[]};WL.lists.push(t);la++}
+  for(const it of l.items){if(t.items.some(x=>x.id===it.id))continue;if(t.items.length>=WL_ITEMS){sk++;continue}t.items.push(it);ia++}}
+ wlSave();return{lists_added:la,items_added:ia,skipped:sk}}
+// COMPARISON SELECTION: up to 6 instruments plus the chosen range, remembered in this browser.
+const CMP_MAX=6,CMPKEY='compare';
+const cmpSaved=(()=>{const d=store.get(CMPKEY,null);return d&&Array.isArray(d.ids)?d:{}})();
+const CMP={ids:(cmpSaved.ids||[]).filter(x=>typeof x==='string').slice(0,CMP_MAX),info:cmpSaved.info&&typeof cmpSaved.info==='object'?cmpSaved.info:{},range:['1mo','3mo','6mo','1y','5y','max'].includes(cmpSaved.range)?cmpSaved.range:'1y',view:'perf',hidden:{},res:null,err:null,busy:false,req:0};
+const cmpSave=()=>store.set(CMPKEY,{ids:CMP.ids,info:CMP.info,range:CMP.range});
+const INFO={};const reg=r=>{const it=wlItem(r);if(it)INFO[it.id]=it;return it&&it.id};
+function cmpAdd(item){const it=wlItem(item);if(!it)return'invalid';if(CMP.ids.includes(it.id))return'exists';if(CMP.ids.length>=CMP_MAX)return'full';CMP.ids.push(it.id);CMP.info[it.id]=it;INFO[it.id]=it;cmpSave();return'added'}
+function cmpRemove(id){CMP.ids=CMP.ids.filter(x=>x!==id);delete CMP.info[id];delete CMP.hidden[id];cmpSave()}
+function wlReset(){WL=wlDefault();wlSave();CMP.ids=[];CMP.info={};CMP.res=null;CMP.err=null;cmpSave()}
+// ==/WLLOGIC==
+
+// ==CMPLOGIC==
+// COMPARE CHART MATHS: series colours, one multi-line SVG on a shared date axis, hover rows, correlation colouring and reply formatting.
+const CMP_COLORS=['#10B981','#3B82F6','#F59E0B','#8B5CF6','#EC4899','#14B8A6'];
+function cmpChartSvg(S,view,hidden,W,ids){const dates=S.dates,n=dates.length;if(n<2)return null;
+ const data=view==='drawdown'?S.drawdown:S.perf,keys=ids.filter(k=>!hidden[k]&&data[k]);const vals=[].concat(...keys.map(k=>data[k])).filter(nz);if(!vals.length)return null;
+ const L=58,R=10,T=8,H=300,AX=20,pw=W-L-R,x=i=>L+pw*i/(n-1);let mn=Math.min(...vals,0),mx=Math.max(...vals,0);if(mn===mx){mn-=1;mx+=1}const pad=(mx-mn)*.06;if(mx>0)mx+=pad;if(mn<0)mn-=pad;
+ const y=v=>T+(H-T-AX)-(v-mn)/(mx-mn)*(H-T-AX);let o='';
+ niceTicks(mn,mx,5).forEach(t=>{const yy=y(t);o+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/><text class="ct" x="${L-6}" y="${(yy+3.5).toFixed(1)}" text-anchor="end">${fmtN(t,mx-mn<10?1:0)}%</text>`});
+ o+=`<line style="stroke:var(--tx2);stroke-width:1" x1="${L}" x2="${W-R}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}"/>`;
+ keys.forEach(k=>{o+=`<path data-k="${esc(k)}" d="${pathOf(data[k],x,y)}" style="fill:none;stroke:${CMP_COLORS[ids.indexOf(k)%6]};stroke-width:2"/>`});
+ [...new Set([0,1,2,3,4].map(k=>Math.round(k*(n-1)/4)))].forEach((i,k,a)=>{o+=`<text class="ct" x="${x(i).toFixed(1)}" y="${H-4}" text-anchor="${k===0?'start':k===a.length-1?'end':'middle'}">${dates[i].slice(0,n>260?7:10).slice(n>260?0:5)}</text>`});
+ return{svg:`<svg class="chartsvg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Comparison chart from ${dates[0]} to ${dates[n-1]}">${o}<line id="cmx" class="cx" x1="0" x2="0" y1="${T}" y2="${H-AX}" style="visibility:hidden"/><rect id="cmv" x="${L}" y="0" width="${pw}" height="${H}" style="fill:transparent"/></svg>`,H,x,n,L,pw}}
+function cmpTipRows(S,i,view,hidden,ids,info){const data=view==='drawdown'?S.drawdown:S.perf;return[['Date',S.dates[i]]].concat(ids.filter(k=>!hidden[k]&&data[k]).map(k=>[(info[k]&&info[k].symbol)||k,nz(data[k][i])?(view==='drawdown'?'':(data[k][i]>0?'+':''))+fmtN(data[k][i])+'%':'—']))}
+const corrBg=v=>!nz(v)?'transparent':v>=0?`rgba(16,185,129,${(Math.abs(v)*.55).toFixed(2)})`:`rgba(220,38,38,${(Math.abs(v)*.55).toFixed(2)})`;
+function compareReply(d,matches,names){const f=v=>v==null?'—':fmtN(v)+'%',ins=d.instruments;
+ const m=matches.map((x,i)=>`${names[i]} → **${x.name}** (${x.id})`).join('; ');
+ const t='| Instrument | Currency | Return | Volatility (ann.) | Max drawdown |\n|---|---|---|---|---|\n'+ins.map(o=>`| ${String(o.name).replace(/\|/g,'/')} (${o.id}) | ${o.currency||'—'} | ${f(o.return_pct)} | ${f(o.vol_ann_pct)} | ${o.max_drawdown?f(o.max_drawdown.pct):'—'} |`).join('\n');
+ const cm=d.correlation,pairs=[];for(let i=0;i<ins.length;i++)for(let j=i+1;j<ins.length;j++)pairs.push(`${ins[i].symbol}/${ins[j].symbol}: ${cm.matrix[i][j]==null?'not enough overlapping data':fmtN(cm.matrix[i][j])}`);
+ return`**I matched:** ${m}. Check these are the companies you meant.\n\n**Common window:** ${d.window.start} to ${d.window.end} (${d.range}). Returns are percentage price changes from the same start date in each stock's own currency.\n\n${t}\n\n**Correlation of returns:** ${pairs.join('; ')}.\n\n`+(d.warnings.length?'**Notes:**\n'+d.warnings.map(w=>'- '+w).join('\n')+'\n\n':'')+'*End-of-day data, not live. Open the Compare page for the interactive chart and fundamentals.*'}
+// ==/CMPLOGIC==
+
+// TOAST AND NAVIGATION HELPERS: a short message for add/remove actions, and opening a stock from any page.
+let toastT;function toast(m){TOASTS.last=m;const e=$('#toast');if(!e)return;e.textContent=m;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2600)}
+const openStockPage=id=>{M.pending=id;go('market')};
+const WSTATUS={added:'Added to your watchlist.',exists:'Already in your watchlist.',full:'Your list is full (50 instruments).',invalid:'That instrument could not be added.'};
+const CSTATUS={exists:'Already in the comparison.',full:'You can compare at most 6 instruments.',invalid:'That instrument could not be added.'};
+// MINI SEARCH: a small search-and-add box used by the Watchlist and Compare pages (any stock in the supported universe).
+const MS={wl:{q:'',res:null,err:null,req:0,t:null},cmp:{q:'',res:null,err:null,req:0,t:null}};
+const msBox=(k,ph)=>`<div class="ac" style="min-width:240px"><label for="msq-${k}">${ph}</label><input class="f" id="msq-${k}" data-ms="${k}" autocomplete="off" placeholder="Company name or ticker" value="${esc(MS[k].q)}"><div id="ms-${k}"></div></div>`;
+async function msSearch(k){const m=MS[k],q=m.q.trim(),req=++m.req;clearTimeout(m.t);if(!q){m.res=null;m.err=null;drawMS(k);return}
+ try{const d=await mget('search',{q,limit:8});if(req!==m.req)return;m.res=d.results;m.err=null}catch(e){if(req!==m.req)return;m.res=null;m.err=e}drawMS(k)}
+function drawMS(k){const el=$('#ms-'+k);if(!el)return;const m=MS[k];
+ if(m.err){el.innerHTML=`<p class="sm2" style="margin:6px 0">${esc(mktErr(m.err))}</p>`;return}
+ if(m.res===null){el.innerHTML='';return}
+ el.innerHTML=m.res.length?`<div class="card" style="padding:4px;margin-top:6px">${m.res.map(r=>{reg(r);return`<button class="msr" data-msadd="${k}|${esc(r.id)}"><span class="tkr">${esc(r.symbol)}</span><span>${esc(r.name)}</span>${badge(r.exchange)}${r.currency?badge(r.currency):''}${r.type==='etf'?badge('ETF','g'):''}<span class="sm2" style="margin-left:auto">${k==='wl'?'+ Add to watchlist':'+ Add to comparison'}</span></button>`}).join('')}</div>`:'<p class="sm2" style="margin:6px 0">No matches in the indexed instruments or live search.</p>'}
+function msAdd(k,id){const it=INFO[id];if(!it)return;
+ if(k==='wl'){const r=wlAdd(it);toast(r==='added'?`${it.symbol} added to your watchlist.`:WSTATUS[r]);if(S.page==='watchlist'){drawWatch();if(r==='added')loadQuotes()}}
+ else{const r=cmpAdd(it);toast(r==='added'?`${it.symbol} added to the comparison (${CMP.ids.length}/${CMP_MAX}).`:CSTATUS[r]);if(r==='added'&&S.page==='compare'){drawCmpSel();runCompare()}}}
+
+// WATCHLIST PAGE: lists, add/remove, latest end-of-day prices and daily changes, open analysis, compare selected, export/import.
+const WQ={data:{},errors:{},loading:false,asof:null,err:null,req:0},WLSEL=new Set();
+function watchlistPage(){return`<div class="wrap">${head('Watchlist','Follow stocks from any supported exchange and see their latest end-of-day prices.')}
+<div class="note">Your watchlists are saved <b>in this browser on this device only</b>. They are not tied to an account and do not sync to other devices or browsers. Use Export to back them up or move them, and Import to restore.</div>
+<div id="wlleg"></div><div id="wltabs" style="margin:12px 0"></div>
+<div class="card" style="margin-bottom:16px">${msBox('wl','Search any stock to add it')}</div>
+<div id="wlmain"></div></div>`}
+function drawWatch(){const t=$('#wltabs'),m=$('#wlmain'),lg=$('#wlleg');if(!m)return;
+ if(lg)lg.innerHTML=S.watch&&S.watch.length?`<div class="warnb" style="margin-top:10px">Earlier versions saved plain tickers without an exchange (${S.watch.map(esc).join(', ')}). They cannot show prices, so please re-add them with the search box. <button class="btn sec sm" data-wllegacy="1">Dismiss</button></div>`:'';
+ if(t)t.innerHTML=WL.lists.map(l=>`<button class="tgl" data-wllist="${esc(l.id)}" aria-pressed="${l.id===WL.active}">${esc(l.name)} (${l.items.length})</button>`).join(' ')+` <button class="btn sec sm" data-wlnew="1">+ New list</button> <button class="btn sec sm" data-wlrename="1">Rename</button> <button class="btn sec sm" data-wldel="1" ${WL.lists.length<2?'disabled':''}>Delete list</button>`;
+ const l=wlList(),n=WLSEL.size;
+ const bar=`<div class="pg"><button class="btn sec sm" data-wlrefresh="1">Refresh prices</button><button class="btn sm" data-wlcmp="1" ${n<2||n>CMP_MAX?'disabled':''}>Compare selected (${n})</button><button class="btn sec sm" data-wlcmpall="1" ${l.items.length<2?'disabled':''}>Compare all (first ${CMP_MAX})</button><button class="btn sec sm" data-wlexport="1">Export</button><button class="btn sec sm" data-wlimport="1">Import</button><input type="file" id="wlfile" accept="application/json,.json" hidden></div>`;
+ if(!l.items.length){m.innerHTML=emptyState('watch','Your watchlist is empty','Search for a company above and press its result to add it, or use "Add to watchlist" on a stock page or in the screener results.')+bar;return}
+ const q=WQ.data,rows=l.items.map(it=>{reg(it);const x=q[it.id],er=WQ.errors[it.id],cur=(x&&x.currency)||it.currency;
+  return`<tr><td><input type="checkbox" data-wlsel="${esc(it.id)}" aria-label="Select ${esc(it.symbol)}" ${WLSEL.has(it.id)?'checked':''}></td><td><button class="rr" data-wlopen="${esc(it.id)}">${esc(it.name)}</button></td><td><b>${esc(it.symbol)}</b></td><td>${esc(it.exchange)}</td>`+
+  (x?`<td>${px(x.price,cur)}<div class="sm2">${esc(x.date)} · ${x.source?esc(x.source):''}</div></td><td>${x.change==null?'—':`<span class="${x.change<0?'neg':'pos'}">${x.change>0?'+':''}${px(x.change,cur)}</span>`}<div>${zpct(x.change_pct)}</div></td><td>${zpct(x.perf_1m)}</td>`:`<td colspan="3" class="sm2">${er?esc(er):WQ.loading?'<span class="load">Loading…</span>':'No price loaded'}</td>`)+
+  `<td><button class="btn sec sm" data-cmpadd="${esc(it.id)}">Compare</button> <button class="btn sec sm" data-wlrm="${esc(it.id)}" aria-label="Remove ${esc(it.symbol)}">Remove</button></td></tr>`}).join('');
+ m.innerHTML=bar+(WQ.err?`<div class="note" style="border:1px solid var(--red)"><b>Prices unavailable.</b> ${esc(mktErr(WQ.err))}</div>`:'')+`<div class="card tw zt" style="padding:6px"><table><thead><tr><th></th><th>Company</th><th>Ticker</th><th>Exchange</th><th>Latest price</th><th>Daily change</th><th>1M %</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+ <p class="sm2" style="margin:10px 0 0">Prices are end-of-day (or the latest daily bar, which can be delayed), not live${WQ.asof?'; retrieved '+esc(WQ.asof.slice(0,16).replace('T',' '))+' UTC':''}. Daily change is the latest close versus the previous close. Each price is in its own currency.</p>`}
+async function loadQuotes(){const ids=wlList().items.map(i=>i.id);if(!ids.length)return;const req=++WQ.req;WQ.loading=true;WQ.err=null;drawWatch();
+ try{for(let k=0;k<ids.length;k+=30){const d=await mget('quotes',{ids:ids.slice(k,k+30).join(',')});if(req!==WQ.req)return;d.quotes.forEach(q=>{WQ.data[q.id]=q;delete WQ.errors[q.id]});d.errors.forEach(e=>{WQ.errors[e.id]=e.message});WQ.asof=d.retrieved_at}}
+ catch(e){if(req!==WQ.req||e.name==='AbortError')return;WQ.err=e}
+ WQ.loading=false;drawWatch()}
+function bindWatchlist(){drawWatch();drawMS('wl');loadQuotes()}
+
+// COMPARE PAGE: choose 2-6 stocks and a range; see rebased performance, a comparison table, correlation and fundamentals.
+function comparePage(){return`<div class="wrap">${head('Compare','Compare stocks over the same dates. Performance is rebased to 100 at a common start, never raw share prices.','Stage 6')}
+<div class="card" style="margin-bottom:16px"><div id="cmpsel"></div><div class="mrow" style="margin-top:8px">${msBox('cmp','Add a stock to compare')}<div style="align-self:flex-end;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec sm" data-cmpfromwl="1">Add from my watchlist</button><button class="btn sec sm" data-cmpclear="1">Clear</button></div></div></div>
+<div id="cmpres"></div></div>`}
+function drawCmpSel(){const el=$('#cmpsel');if(!el)return;
+ el.innerHTML=(CMP.ids.length?CMP.ids.map((id,i)=>{const it=CMP.info[id]||{symbol:id,name:id};return`<span class="chip2"><span class="dot" style="background:${CMP_COLORS[i%6]}"></span><b>${esc(it.symbol||id)}</b> ${esc(it.name||'')} ${it.exchange?badge(it.exchange):''}${it.currency?badge(it.currency):''}<button data-cmprm="${esc(id)}" aria-label="Remove ${esc(it.symbol||id)}">×</button></span>`}).join(''):'<span class="sm2">No stocks selected yet.</span>')+
+ `<div class="ctl"><span class="sm2">${CMP.ids.length}/${CMP_MAX} selected (2 to 6 needed)</span><div class="seg" role="group" aria-label="Range">${RANGES_UI.map(([k,l])=>`<button data-cmprange="${k}" class="${CMP.range===k?'on':''}">${l}</button>`).join('')}</div></div>`}
+function cmpBest(vals,pick){const v=vals.filter(nz);return v.length>1?pick(...v):null}
+function cmpTable(d){const ins=d.instruments,r=(label,cells,best)=>`<tr><td>${label}</td>${cells.map((c,i)=>`<td class="${best!=null&&nz(best.v[i])&&best.v[i]===best.b?'bestc':''}">${c}</td>`).join('')}</tr>`;
+ const nums=k=>ins.map(o=>o[k]),mdd=ins.map(o=>o.max_drawdown?o.max_drawdown.pct:null),na='<span class="sm2">Not available</span>',f=ins.map(o=>o.fundamentals);
+ const bo=(v,b)=>({v,b:b});const ret=nums('return_pct'),vol=nums('vol_ann_pct');
+ return`<table class="ctable"><thead><tr><th></th>${ins.map((o,i)=>`<th><span class="dot" style="background:${CMP_COLORS[i%6]}"></span> <button class="rr" data-cmpopen="${esc(o.id)}">${esc(o.name)}</button><div class="sm2">${esc(o.symbol)} · ${esc(o.exchange)} · ${esc(o.currency||'—')}</div></th>`).join('')}</tr></thead><tbody>
+ ${r('Return over window',ins.map(o=>zpct(o.return_pct)),bo(ret,cmpBest(ret,Math.max)))}
+ ${r('Volatility (annualised)',ins.map(o=>o.vol_ann_pct==null?`<span class="sm2" title="${esc(o.vol_reason||'')}">—</span>`:fmtN(o.vol_ann_pct)+'%'),bo(vol,cmpBest(vol,Math.min)))}
+ ${r('Maximum drawdown',ins.map(o=>o.max_drawdown?`<span class="neg">${fmtN(o.max_drawdown.pct)}%</span><div class="sm2">${esc(o.max_drawdown.peak_date)} → ${esc(o.max_drawdown.trough_date)}</div>`:'—'),bo(mdd,cmpBest(mdd,Math.max)))}
+ ${r('Average daily volume (shares)',ins.map(o=>o.avg_volume==null?na:fmtCompact(o.avg_volume)))}
+ ${[20,50,200].map(n=>r(`Price vs ${n}-day average`,ins.map(o=>{const s=o['sma'+n];return s.value==null?`<span class="sm2">${esc(s.reason)}</span>`:`${zpct(s.price_vs_pct)}<div class="sm2">avg ${px(s.value,o.currency)}</div>`}))).join('')}
+ ${r('Market capitalisation (own currency)',f.map((x,i)=>x&&x.metrics&&x.metrics.market_cap?bigNum(x.metrics.market_cap.value,x.metrics.market_cap.currency||ins[i].currency):na))}
+ ${r('P/E ratio (TTM)',f.map(x=>x&&x.metrics&&x.metrics.pe_ttm?fmtN(x.metrics.pe_ttm.value,1):na))}
+ ${r('EPS (TTM, own currency)',f.map((x,i)=>x&&x.metrics&&x.metrics.eps_ttm?px(x.metrics.eps_ttm.value,x.metrics.eps_ttm.currency||ins[i].currency):na))}
+ ${r('Dividend yield',f.map(x=>x&&x.metrics&&x.metrics.dividend_yield_pct?fmtN(x.metrics.dividend_yield_pct.value)+'%':na))}
+ ${r('Sector',f.map(x=>x&&x.sector?esc(x.sector):na))}${r('Industry',f.map(x=>x&&x.industry?esc(x.industry):na))}
+ ${r('Latest close (own currency; not comparable between stocks)',ins.map(o=>`${px(o.price,o.currency)}<div class="sm2">${esc(o.last_date)}</div>`))}
+ ${r('Observations in window',ins.map(o=>`${o.observations}<div class="sm2">from ${esc(o.baseline_date)}</div>`))}
+ ${r('Source',ins.map(o=>esc(o.source)+(o.basis==='adjusted'?'':'<div class="sm2">unadjusted closes</div>')))}
+ </tbody></table>`}
+function cmpCorr(d){const c=d.correlation,ins=d.instruments;
+ return`<div class="tw"><table class="cm"><thead><tr><th></th>${ins.map(o=>`<th>${esc(o.symbol)}</th>`).join('')}</tr></thead><tbody>${c.matrix.map((row,i)=>`<tr><th>${esc(ins[i].symbol)}</th>${row.map((v,j)=>`<td style="background:${corrBg(v)}" title="${c.overlap[i][j]} overlapping return observations">${v==null?'—':fmtN(v)}${i!==j?`<div class="sm2">n=${c.overlap[i][j]}</div>`:''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${c.notes.map(n=>`<p class="sm2" style="margin:4px 0 0">${esc(n)}</p>`).join('')}<p class="sm2" style="margin:6px 0 0">Correlation uses daily returns on dates when both stocks actually traded (at least ${c.min_returns} needed). It describes the past and does not predict the future.</p>`}
+function drawCmpRes(){const el=$('#cmpres');if(!el)return;
+ if(CMP.ids.length<2){el.innerHTML=emptyState('compare',CMP.ids.length?'Add one more stock':'Nothing to compare yet','Search above to add two to six stocks from any supported exchange, or add them from your watchlist. They are compared over identical dates and rebased to 100, so different prices and currencies do not distort the picture.');return}
+ if(CMP.busy&&!CMP.res){el.innerHTML='<div class="card"><span class="load">Loading histories and aligning dates…</span></div>';return}
+ if(CMP.err){const x=CMP.err;el.innerHTML=emptyState('compare','Could not compare these stocks',esc(mktErr(x)))+((x.errors||[]).length?`<ul class="sm2">${x.errors.map(e=>`<li>${esc(e.id)}: ${esc(e.message)}</li>`).join('')}</ul>`:'');return}
+ const d=CMP.res;if(!d){el.innerHTML='';return}const ids=d.instruments.map(o=>o.id),info={};d.instruments.forEach(o=>info[o.id]=o);
+ el.innerHTML=`${d.warnings.map(w=>`<div class="warnb" style="margin-bottom:8px">${esc(w)}</div>`).join('')}
+ <div class="card" style="margin:12px 0"><div class="ctl"><b>${CMP.view==='drawdown'?'Drawdown from running peak':'Performance rebased to 0% at '+esc(d.window.start)}</b><div class="seg" role="group" aria-label="Chart view">${[['perf','Performance'],['drawdown','Drawdown']].map(([k,l])=>`<button data-cmpview="${k}" class="${CMP.view===k?'on':''}">${l}</button>`).join('')}</div><button class="btn sec sm" data-cmpcsv="1">Download CSV</button></div>
+ <div class="leg">${d.instruments.map((o,i)=>`<button class="legb" data-cmpleg="${esc(o.id)}" aria-pressed="${!CMP.hidden[o.id]}"><span class="dot" style="background:${CMP_COLORS[i%6]}"></span>${esc(o.symbol)}</button>`).join('')}</div>
+ <div class="chartwrap" id="cmpchart"></div><p class="sm2" style="margin:6px 0 0">${esc(d.window.start)} to ${esc(d.window.end)} (${d.window.days} days) · ${esc(d.data_type_label)} · not live. Click a name above to hide or show it.</p></div>
+ <div class="card tw" style="padding:6px;margin-bottom:12px">${cmpTable(d)}</div>
+ <div class="card"><b>Correlation of daily returns</b><div style="margin-top:8px">${cmpCorr(d)}</div></div>
+ ${d.errors.length?`<details class="card" style="margin-top:12px"><summary>Not compared (${d.errors.length})</summary><ul class="sm2">${d.errors.map(e=>`<li>${esc(e.id)}: ${esc(e.message)}</li>`).join('')}</ul></details>`:''}
+ <p class="sm2" style="margin:12px 0 0">Prices come from ${esc([...new Set(d.instruments.map(o=>o.source))].join(', '))}. Returns are price changes${d.instruments.every(o=>o.basis==='adjusted')?' adjusted for splits and dividends':' (adjusted where the provider supplies adjusted closes)'} and exclude currency movements. This is data for comparison, not investment advice.</p>`;
+ drawCmpChart()}
+function drawCmpChart(){const el=$('#cmpchart'),d=CMP.res;if(!el||!d)return;const ids=d.instruments.map(o=>o.id),W=Math.max(300,Math.floor(el.clientWidth||720)),g=cmpChartSvg(d.series,CMP.view,CMP.hidden,W,ids);
+ if(!g){el.innerHTML='<div class="empty" style="padding:24px">Nothing to draw: every series is hidden or has no data.</div>';return}
+ g.W=W;el.innerHTML=g.svg+'<div class="tip" id="cmptip" hidden></div>';
+ const ov=$('#cmv'),cx=$('#cmx'),tip=$('#cmptip');if(!ov||!cx||!tip)return;const info={};d.instruments.forEach(o=>info[o.id]=o);
+ const move=e=>{const r=ov.getBoundingClientRect(),i=idxAt(e.clientX,r.left,r.width,g.n),X=g.x(i);cx.setAttribute('x1',X);cx.setAttribute('x2',X);cx.style.visibility='visible';
+  tip.innerHTML=cmpTipRows(d.series,i,CMP.view,CMP.hidden,ids,info).map(([k,v])=>`<div class="kv" style="padding:2px 0;border:0"><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('');tip.hidden=false;const w=tip.offsetWidth||160;tip.style.left=Math.max(0,Math.min(X+14,g.W-w-4))+'px';tip.style.top='6px'};
+ ov.onpointermove=move;ov.onpointerdown=move;ov.onpointerleave=()=>{cx.style.visibility='hidden';tip.hidden=true}}
+async function runCompare(){const req=++CMP.req;if(CMP.ids.length<2){CMP.res=null;CMP.err=null;CMP.busy=false;drawCmpRes();return}
+ CMP.busy=true;CMP.err=null;drawCmpRes();
+ try{const d=await mget('compare',{ids:CMP.ids.join(','),range:CMP.range});if(req!==CMP.req)return;CMP.res=d;d.instruments.forEach(o=>{CMP.info[o.id]=Object.assign({},CMP.info[o.id],{id:o.id,name:o.name,symbol:o.symbol,exchange:o.exchange,currency:o.currency})});cmpSave()}
+ catch(e){if(req!==CMP.req||e.name==='AbortError')return;CMP.res=null;CMP.err=e}
+ CMP.busy=false;drawCmpSel();drawCmpRes()}
+function cmpCsv(){const d=CMP.res;if(!d)return'';const ids=d.instruments.map(o=>o.id),q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ return[['Date'].concat(d.instruments.map(o=>o.symbol+' ('+o.id+') return % since '+d.window.start)).map(q).join(',')].concat(d.series.dates.map((dt,i)=>[dt].concat(ids.map(k=>{const v=d.series.perf[k][i];return v==null?'':v})).join(','))).join('\n')}
+function bindCompare(){drawCmpSel();drawMS('cmp');drawCmpRes();if(CMP.ids.length>=2&&!CMP.res&&!CMP.busy)runCompare()}
+const downloadText=(name,text,type)=>{const a=document.createElement('a');a.href='data:'+type+';charset=utf-8,'+encodeURIComponent(text);a.download=name;a.click()};
+// ACTIONS: every Watchlist/Compare control routes through these functions.
+function wlAskName(msg,def){return typeof prompt==='function'?prompt(msg,def):null}
+function onWlClick(d,t){
+ if(d.wladd!==undefined){const it=INFO[d.wladd];if(it){const r=wlAdd(it);toast(r==='added'?`${it.symbol} added to your watchlist.`:WSTATUS[r])}}
+ else if(d.cmpadd!==undefined){const it=INFO[d.cmpadd];if(it){const r=cmpAdd(it);toast(r==='added'?`${it.symbol} added to the comparison (${CMP.ids.length}/${CMP_MAX}).`:CSTATUS[r]);if(S.page==='watchlist'&&(r==='added'||r==='exists'))go('compare')}}
+ else if(d.cmpgo!==undefined){const it=INFO[d.cmpgo];if(it){const r=cmpAdd(it);if(r==='full')toast(CSTATUS.full);else go('compare')}}
+ else if(d.msadd!==undefined){const [k,id]=d.msadd.split('|');msAdd(k,id)}
+ else if(d.wlrm!==undefined){wlRemove(d.wlrm);WLSEL.delete(d.wlrm);toast('Removed from your watchlist.');drawWatch()}
+ else if(d.wlsel!==undefined){t.checked?WLSEL.add(d.wlsel):WLSEL.delete(d.wlsel);drawWatch()}
+ else if(d.wlopen!==undefined)openStockPage(d.wlopen)
+ else if(d.wllist!==undefined){WL.active=d.wllist;wlSave();WLSEL.clear();drawWatch();loadQuotes()}
+ else if(d.wlnew!==undefined){const id=wlNewList(wlAskName('Name for the new list:',''));if(id){WLSEL.clear();drawWatch()}else toast(WL.lists.length>=WL_LISTS?'You have reached the limit of 20 lists.':'A list needs a name.')}
+ else if(d.wlrename!==undefined){const n=wlAskName('Rename this list:',wlList().name);if(n){wlRename(WL.active,n);drawWatch()}}
+ else if(d.wldel!==undefined){if(WL.lists.length>1&&(typeof confirm!=='function'||confirm('Delete the list "'+wlList().name+'" and its stocks?'))){wlDelete(WL.active);WLSEL.clear();drawWatch();loadQuotes()}}
+ else if(d.wlrefresh!==undefined){WQ.data={};WQ.errors={};loadQuotes()}
+ else if(d.wlcmp!==undefined){WLSEL.forEach(id=>{const it=INFO[id];if(it)cmpAdd(it)});go('compare')}
+ else if(d.wlcmpall!==undefined){wlList().items.slice(0,CMP_MAX).forEach(it=>cmpAdd(it));go('compare')}
+ else if(d.wlexport!==undefined){downloadText('finbot-watchlists.json',wlExport(),'application/json');toast('Watchlists exported.')}
+ else if(d.wlimport!==undefined){const f=$('#wlfile');if(f&&f.click)f.click()}
+ else if(d.wllegacy!==undefined){S.watch=[];save();drawWatch()}
+ else if(d.cmprm!==undefined){cmpRemove(d.cmprm);drawCmpSel();runCompare()}
+ else if(d.cmprange!==undefined){CMP.range=d.cmprange;cmpSave();drawCmpSel();runCompare()}
+ else if(d.cmpview!==undefined){CMP.view=d.cmpview;drawCmpRes()}
+ else if(d.cmpleg!==undefined){CMP.hidden[d.cmpleg]=!CMP.hidden[d.cmpleg];drawCmpRes()}
+ else if(d.cmpclear!==undefined){CMP.ids=[];CMP.info={};CMP.hidden={};CMP.res=null;CMP.err=null;cmpSave();drawCmpSel();drawCmpRes()}
+ else if(d.cmpfromwl!==undefined){let n=0;wlList().items.forEach(it=>{if(cmpAdd(it)==='added')n++});toast(n?`Added ${n} from your watchlist.`:'Nothing new to add from your watchlist.');drawCmpSel();runCompare()}
+ else if(d.cmpopen!==undefined)openStockPage(d.cmpopen)
+ else if(d.cmpcsv!==undefined){downloadText('finbot-comparison.csv',cmpCsv(),'text/csv')}
+ else if(d.zcmp!==undefined){const rows=(Z.res&&Z.res.rows||[]).slice(0,CMP_MAX);rows.forEach(r=>{const it=reg(r);if(it)cmpAdd(INFO[it])});go('compare')}}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-wladd],[data-cmpadd],[data-cmpgo],[data-msadd],[data-wlrm],[data-wlopen],[data-wllist],[data-wlnew],[data-wlrename],[data-wldel],[data-wlrefresh],[data-wlcmp],[data-wlcmpall],[data-wlexport],[data-wlimport],[data-wllegacy],[data-cmprm],[data-cmprange],[data-cmpview],[data-cmpleg],[data-cmpclear],[data-cmpfromwl],[data-cmpopen],[data-cmpcsv],[data-zcmp]');if(t)onWlClick(t.dataset,t)});
+document.addEventListener('change',e=>{const t=e.target,d=t&&t.dataset;if(!d)return;if(d.wlsel!==undefined)onWlClick(d,t);else if(t.id==='wlfile'&&t.files&&t.files[0]){t.files[0].text().then(x=>{try{const r=wlImport(x);toast(`Imported ${r.items_added} stock(s) into ${r.lists_added} new list(s)`+(r.skipped?`; ${r.skipped} skipped (limits).`:'.'));drawWatch();loadQuotes()}catch(err){toast(err.message)}})}});
+document.addEventListener('input',e=>{const t=e.target,k=t&&t.dataset&&t.dataset.ms;if(!k)return;MS[k].q=t.value;clearTimeout(MS[k].t);MS[k].t=setTimeout(()=>msSearch(k),250)});
+document.addEventListener('keydown',e=>{const t=e.target,k=t&&t.dataset&&t.dataset.ms;if(k&&e.key==='Enter'){e.preventDefault();msSearch(k)}});
+if(window.addEventListener)window.addEventListener('resize',()=>{clearTimeout(CMP.rt);CMP.rt=setTimeout(()=>{if(S.page==='compare')drawCmpChart()},150)});
+// PLATFORM AI CHECK: asks the hosting page whether live AI is available and updates the labels when it answers.
+(async()=>{try{if(window.claude&&claude.use){const s=await claude.use('sample');if(s)S.sample=s}}catch(e){}
+ try{const c=await(await fetch(S.backendUrl.replace(/\/chat$/,'')+'/config')).json();S.backendReady=!!c.chat;S.llmName=c.model||''}catch(e){}
+ const b=$('#provbadge');if(b)b.textContent=provLabel();const st=$('#provstat');if(st)st.textContent=provStat()})();
+
+// START: apply the theme and open the home screen.
+applyTheme();go('home');
+</script>
+</body>
+</html>

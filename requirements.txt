@@ -1,0 +1,1 @@
+# FinBot uses only the Python standard library. This file exists so hosting platforms detect a Python project.

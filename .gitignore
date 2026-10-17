@@ -1,0 +1,27 @@
+.env
+.cache/
+__pycache__/
+*.pyc
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+/env
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
+# Application caches
+.cache/
+
+# Logs and local test artifacts
+*.log
+.pytest_cache/
+.coverage

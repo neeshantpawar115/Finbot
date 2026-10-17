@@ -1,0 +1,23 @@
+# One-click deploy on Render (free web service, HTTPS included). Secrets are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: finbot
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+      - {key: TWELVEDATA_API_KEY, sync: false}
+      - {key: ANGELONE_API_KEY, sync: false}
+      - {key: ANGELONE_CLIENT_CODE, sync: false}
+      - {key: ANGELONE_PIN, sync: false}
+      - {key: ANGELONE_TOTP_SECRET, sync: false}
+      - {key: ALPHAVANTAGE_API_KEY, sync: false}
+      - {key: FINNHUB_API_KEY, sync: false}
+      - {key: FINBOT_ADMIN_TOKEN, sync: false}
+      - {key: LLM_BASE_URL, sync: false}
+      - {key: LLM_MODEL, sync: false}
+      - {key: LLM_API_KEY, sync: false}
