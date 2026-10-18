@@ -1,6 +1,4 @@
 # FinBot uses only the Python standard library. This file exists so hosting platforms detect a Python project.
-fastapi
-uvicorn[standard]
 python-dotenv
 httpx
 pandas
@@ -8,3 +6,11 @@ numpy
 yfinance
 jinja2
 python-multipart
+
+# FinBot runtime dependencies
+# The HTTP server in app.py uses Python's standard library; FastAPI/Uvicorn are not required.
+
+# Market data and data analysis
+yfinance
+pandas
+numpy
