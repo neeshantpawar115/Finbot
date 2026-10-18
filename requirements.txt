@@ -1,1 +1,10 @@
 # FinBot uses only the Python standard library. This file exists so hosting platforms detect a Python project.
+fastapi
+uvicorn[standard]
+python-dotenv
+httpx
+pandas
+numpy
+yfinance
+jinja2
+python-multipart
